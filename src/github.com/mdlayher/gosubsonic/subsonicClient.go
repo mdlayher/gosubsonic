@@ -29,15 +29,12 @@ func (s SubsonicClient) makeURL(method string) string {
 		s.Host, s.Port, method, s.Username, s.Password, CLIENT, APIVERSION)
 }
 
-// Fetch a list of all artists known to Subsonic
-func (s SubsonicClient) FetchArtists() ([]Artist, error) {
-	// List of artists to return
-	artists := make([]Artist, 0)
-
-	// Request a list of artists from API
-	res, err := http.Get(s.makeURL("getArtists"))
+// Fetch JSON from specified URL and parse into ApiContainer
+func fetchJSON(url string) (ApiContainer, error) {
+	// Make an API request
+	res, err := http.Get(url)
 	if err != nil {
-		return artists, errors.New("HTTP request 'getArtists' failed")
+		return ApiContainer{}, errors.New("HTTP request failed: " + url)
 	}
 
 	// Read the entire response body, and defer it to be closed
@@ -51,11 +48,26 @@ func (s SubsonicClient) FetchArtists() ([]Artist, error) {
 	// Check for any errors in response object
 	if subRes.Response.Error != (ApiError{}) {
 		// Report error and code
-		return artists, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+		return ApiContainer{}, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+	}
+
+	// Return the response container
+	return subRes, nil
+}
+
+// Fetch a list of all artists known to Subsonic
+func (s SubsonicClient) FetchArtists() ([]Artist, error) {
+	// List of artists to return
+	artists := make([]Artist, 0)
+
+	// Query for list of all artists
+	res, err := fetchJSON(s.makeURL("getArtists"))
+	if err != nil {
+		return artists, err
 	}
 
 	// Iterate all indices to get artist lists inside
-	for _, i := range subRes.Response.Artists.Index {
+	for _, i := range res.Response.Artists.Index {
 		// Iterate all artists and append to list
 		for _, a := range i.Artist {
 			artists = append(artists[:], a)
@@ -69,25 +81,11 @@ func (s SubsonicClient) FetchArtists() ([]Artist, error) {
 // Fetch artist by ID from Subsonic
 func (s SubsonicClient) GetArtist(id int) (Artist, error) {
 	// Request artist from API, by ID
-	res, err := http.Get(s.makeURL("getArtist") + "&id=" + strconv.FormatInt(int64(id), 10))
+	res, err := fetchJSON(s.makeURL("getArtist") + "&id=" + strconv.FormatInt(int64(id), 10))
 	if err != nil {
-		return Artist{}, errors.New("HTTP request 'getArtist' failed")
-	}
-
-	// Read the entire response body, and defer it to be closed
-	body, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-
-	// Unmarshal response JSON from API container
-	var subRes ApiContainer
-	json.Unmarshal(body, &subRes)
-
-	// Check for any errors in response object
-	if subRes.Response.Error != (ApiError{}) {
-		// Report error and code
-		return Artist{}, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+		return Artist{}, err
 	}
 
 	// Return artist
-	return subRes.Response.Artist, nil
+	return res.Response.Artist, nil
 }
