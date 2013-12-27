@@ -69,7 +69,7 @@ func (s SubsonicClient) FetchArtists() ([]Artist, error) {
 // Fetch artist by ID from Subsonic
 func (s SubsonicClient) GetArtist(id int) (Artist, error) {
 	// Request artist from API, by ID
-	res, err := http.Get(s.makeURL("getArtist")+"&id="+strconv.FormatInt(int64(id), 10))
+	res, err := http.Get(s.makeURL("getArtist") + "&id=" + strconv.FormatInt(int64(id), 10))
 	if err != nil {
 		return Artist{}, errors.New("HTTP request 'getArtist' failed")
 	}
