@@ -70,6 +70,7 @@ func (s SubsonicClient) FetchArtists() ([]Artist, error) {
 	for _, i := range res.Response.Artists.Index {
 		// Iterate all artists and append to list
 		for _, a := range i.Artist {
+			a.Client = s
 			artists = append(artists[:], a)
 		}
 	}
@@ -86,6 +87,9 @@ func (s SubsonicClient) GetArtist(id int) (Artist, error) {
 		return Artist{}, err
 	}
 
+	artist := res.Response.Artist
+	artist.Client = s
+
 	// Return artist
-	return res.Response.Artist, nil
+	return artist, nil
 }
