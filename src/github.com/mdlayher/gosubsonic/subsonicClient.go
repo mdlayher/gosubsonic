@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 // Constants to pass with each API request
@@ -63,4 +64,30 @@ func (s SubsonicClient) FetchArtists() ([]Artist, error) {
 
 	// Return list of artists
 	return artists, nil
+}
+
+// Fetch artist by ID from Subsonic
+func (s SubsonicClient) GetArtist(id int) (Artist, error) {
+	// Request artist from API, by ID
+	res, err := http.Get(s.makeURL("getArtist")+"&id="+strconv.FormatInt(int64(id), 10))
+	if err != nil {
+		return Artist{}, errors.New("HTTP request 'getArtist' failed")
+	}
+
+	// Read the entire response body, and defer it to be closed
+	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+
+	// Unmarshal response JSON from API container
+	var subRes ApiContainer
+	json.Unmarshal(body, &subRes)
+
+	// Check for any errors in response object
+	if subRes.Response.Error != (ApiError{}) {
+		// Report error and code
+		return Artist{}, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+	}
+
+	// Return artist
+	return subRes.Response.Artist, nil
 }
