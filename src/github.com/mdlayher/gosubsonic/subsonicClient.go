@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // Constants to pass with each API request
@@ -41,9 +42,19 @@ func fetchJSON(url string) (ApiContainer, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 
+	// Due to an inconsistency in the Subsonic API, we use a temporary album to store single item returns,
+	// to be converted to an array later on.
+	strBody := string(body)
+	if strings.Contains(strBody, "\"album\": {") {
+		strBody = strings.Replace(strBody, "\"album\": {", "\"tempAlbum\": {", 1)
+	}
+
 	// Unmarshal response JSON from API container
 	var subRes ApiContainer
-	json.Unmarshal(body, &subRes)
+	err = json.Unmarshal([]byte(strBody), &subRes)
+	if err != nil {
+		return ApiContainer{}, errors.New("Failed to parse response JSON: " + url)
+	}
 
 	// Check for any errors in response object
 	if subRes.Response.Error != (ApiError{}) {
@@ -89,6 +100,13 @@ func (s SubsonicClient) GetArtist(id int) (Artist, error) {
 
 	artist := res.Response.Artist
 	artist.Client = s
+
+	// If a temp album was set, inject it as the first element in Album
+	if artist.TempAlbum != (Album{}) {
+		artist.Album = make([]Album, 0)
+		artist.Album = append(artist.Album[:], artist.TempAlbum)
+		artist.TempAlbum = Album{}
+	}
 
 	// Return artist
 	return artist, nil

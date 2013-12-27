@@ -3,6 +3,7 @@ package gosubsonic
 type Artist struct {
 	Id         int
 	Album      []Album
+	TempAlbum  Album
 	AlbumCount int
 	CoverArt   string
 	Name       string
