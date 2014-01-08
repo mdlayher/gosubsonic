@@ -12,6 +12,7 @@ type ApiStatusResponse struct {
 	Status  string
 	Version string
 	Artists ApiArtist
+	Artist  Artist
 }
 
 // Any errors reported by API

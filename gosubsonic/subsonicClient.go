@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 )
 
 // Constants to pass with each API request
@@ -28,39 +30,84 @@ func (s SubsonicClient) makeURL(method string) string {
 		s.Host, s.Port, method, s.Username, s.Password, CLIENT, APIVERSION)
 }
 
-// Fetch a list of all artists known to Subsonic
-func (s SubsonicClient) FetchArtists() ([]Artist, error) {
-	// List of artists to return
-	artists := make([]Artist, 0)
-
-	// Request a list of artists from API
-	res, err := http.Get(s.makeURL("getArtists"))
+// Fetch JSON from specified URL and parse into ApiContainer
+func fetchJSON(url string) (ApiContainer, error) {
+	// Make an API request
+	res, err := http.Get(url)
 	if err != nil {
-		return artists, errors.New("HTTP request 'getArtists' failed")
+		return ApiContainer{}, errors.New("HTTP request failed: " + url)
 	}
 
 	// Read the entire response body, and defer it to be closed
 	body, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 
+	// Due to an inconsistency in the Subsonic API, we use a temporary album to store single item returns,
+	// to be converted to an array later on.
+	strBody := string(body)
+	if strings.Contains(strBody, "\"album\": {") {
+		strBody = strings.Replace(strBody, "\"album\": {", "\"tempAlbum\": {", 1)
+	}
+
 	// Unmarshal response JSON from API container
 	var subRes ApiContainer
-	json.Unmarshal(body, &subRes)
+	err = json.Unmarshal([]byte(strBody), &subRes)
+	if err != nil {
+		return ApiContainer{}, errors.New("Failed to parse response JSON: " + url)
+	}
 
 	// Check for any errors in response object
 	if subRes.Response.Error != (ApiError{}) {
 		// Report error and code
-		return artists, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+		return ApiContainer{}, errors.New(fmt.Sprintf("%d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message))
+	}
+
+	// Return the response container
+	return subRes, nil
+}
+
+// Fetch a list of all artists known to Subsonic
+func (s SubsonicClient) FetchArtists() ([]Artist, error) {
+	// List of artists to return
+	artists := make([]Artist, 0)
+
+	// Query for list of all artists
+	res, err := fetchJSON(s.makeURL("getArtists"))
+	if err != nil {
+		return artists, err
 	}
 
 	// Iterate all indices to get artist lists inside
-	for _, i := range subRes.Response.Artists.Index {
+	for _, i := range res.Response.Artists.Index {
 		// Iterate all artists and append to list
 		for _, a := range i.Artist {
+			a.Client = s
 			artists = append(artists[:], a)
 		}
 	}
 
 	// Return list of artists
 	return artists, nil
+}
+
+// Fetch artist by ID from Subsonic
+func (s SubsonicClient) GetArtist(id int) (Artist, error) {
+	// Request artist from API, by ID
+	res, err := fetchJSON(s.makeURL("getArtist") + "&id=" + strconv.FormatInt(int64(id), 10))
+	if err != nil {
+		return Artist{}, err
+	}
+
+	artist := res.Response.Artist
+	artist.Client = s
+
+	// If a temp album was set, inject it as the first element in Album
+	if artist.TempAlbum != (Album{}) {
+		artist.Album = make([]Album, 0)
+		artist.Album = append(artist.Album[:], artist.TempAlbum)
+		artist.TempAlbum = Album{}
+	}
+
+	// Return artist
+	return artist, nil
 }
