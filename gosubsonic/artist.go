@@ -5,4 +5,5 @@ type Artist struct {
 	Name       string
 	CoverArt   string
 	AlbumCount int
+	Album      []Album
 }
