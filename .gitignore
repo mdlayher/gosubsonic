@@ -1,4 +1,2 @@
-test.go
 *.swp
-bin/
-pkg/
+*.tmp
