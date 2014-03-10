@@ -1,19 +1,19 @@
 package gosubsonic
 
-// ApiContainer represents the top-level response from Subsonic
-type ApiContainer struct {
-	Response ApiStatusResponse `json:"subsonic-response"`
+// APIContainer represents the top-level response from Subsonic
+type APIContainer struct {
+	Response APIStatusResponse `json:"subsonic-response"`
 }
 
-// ApiError represents any errors reported by Subsonic
-type ApiError struct {
+// APIError represents any errors reported by Subsonic
+type APIError struct {
 	Message string
 	Code    int
 }
 
-// ApiStatusResponse represents the current status of Subsonic
-type ApiStatusResponse struct {
-	Error   ApiError
+// APIStatusResponse represents the current status of Subsonic
+type APIStatusResponse struct {
+	Error   APIError
 	Xmlns   string
 	Status  string
 	Version string

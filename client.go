@@ -24,7 +24,7 @@ type SubsonicClient struct {
 // New creates a new SubsonicClient using the specified parameters
 func New(host string, username string, password string) (*SubsonicClient, error) {
 	return &SubsonicClient{
-		Host: host,
+		Host:     host,
 		Username: username,
 		Password: password,
 	}, nil
