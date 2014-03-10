@@ -23,11 +23,15 @@ type SubsonicClient struct {
 
 // New creates a new SubsonicClient using the specified parameters
 func New(host string, username string, password string) (*SubsonicClient, error) {
-	return &SubsonicClient{
+	// Generate a new Subsonic client
+	client := SubsonicClient{
 		Host:     host,
 		Username: username,
 		Password: password,
-	}, nil
+	}
+
+	// Attempt to ping the Subsonic server
+	return &client, client.Ping()
 }
 
 // Ping checks the connectivity of a Subsonic server
@@ -46,8 +50,8 @@ func (s SubsonicClient) makeURL(method string) string {
 		s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
 }
 
-// fetchJSON from specified URL and parse into ApiContainer
-func fetchJSON(url string) (*ApiContainer, error) {
+// fetchJSON from specified URL and parse into APIContainer
+func fetchJSON(url string) (*APIContainer, error) {
 	// Make an API request
 	res, err := http.Get(url)
 	if err != nil {
@@ -59,14 +63,14 @@ func fetchJSON(url string) (*ApiContainer, error) {
 	defer res.Body.Close()
 
 	// Unmarshal response JSON from API container
-	var subRes ApiContainer
+	var subRes APIContainer
 	err = json.Unmarshal([]byte(body), &subRes)
 	if err != nil {
 		return nil, errors.New("Failed to parse response JSON: " + url)
 	}
 
 	// Check for any errors in response object
-	if subRes.Response.Error != (ApiError{}) {
+	if subRes.Response.Error != (APIError{}) {
 		// Report error and code
 		return nil, fmt.Errorf("gosubsonic: %d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message)
 	}
