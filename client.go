@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // Constants to pass with each API request
@@ -34,6 +35,8 @@ func New(host string, username string, password string) (*SubsonicClient, error)
 	return &client, client.Ping()
 }
 
+// -- System --
+
 // Ping checks the connectivity of a Subsonic server
 func (s SubsonicClient) Ping() error {
 	// Nil error means that ping is successful
@@ -42,6 +45,31 @@ func (s SubsonicClient) Ping() error {
 	}
 
 	return nil
+}
+
+// GetLicense retrieves details about the Subsonic server license
+func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
+	// Retrieve license information from Subsonic
+	fmt.Println(s.makeURL("getLicense"))
+	res, err := fetchJSON(s.makeURL("getLicense"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Check for a license in the response
+	if res.Response.License == (SubsonicLicense{}) {
+		return nil, errors.New("gosubsonic: no license found")
+	}
+
+	// Parse raw date into a time.Time struct, using the special Go date for parsing
+	// reference: http://golang.org/pkg/time/#Parse
+	t, err := time.Parse("2006-01-02T15:04:05", res.Response.License.DateRaw)
+	if err != nil {
+		return nil, err
+	}
+	res.Response.License.Date = t
+
+	return &res.Response.License, nil
 }
 
 // makeURL Generates a URL for an API call using given parameters and method
