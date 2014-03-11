@@ -30,6 +30,9 @@ type APIStatus struct {
 
 	// MusicFolders - returned only in GetMusicFolders
 	MusicFolders MusicFolderContainer
+
+	// Indexes - returned only in GetIndexes
+	Indexes IndexesContainer
 }
 
 // SubsonicLicense represents the license status of Subsonic
@@ -51,6 +54,27 @@ type MusicFolderContainer struct {
 
 // MusicFolder represents a top-level music folders of Subsonic
 type MusicFolder struct {
-	ID int64
+	ID   int64
+	Name string
+}
+
+// IndexesContainer represents the container for a slice of Index structs
+type IndexesContainer struct {
+	Index []SubsonicIndex
+}
+
+// SubsonicIndex represents a group in the Subsonic index
+type SubsonicIndex struct {
+	// Raw values
+	Name      string
+	ArtistRaw interface{} `json:"artist"`
+
+	// Artist - generated from raw interfaces
+	Artist []IndexArtist
+}
+
+// IndexArtist represents an artist in the Subsonic index
+type IndexArtist struct {
+	ID   int64
 	Name string
 }
