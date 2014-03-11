@@ -26,23 +26,23 @@ type APIStatus struct {
 	Error APIError
 
 	// license - returned only in GetLicense
-	license SubsonicLicense
+	License License
 
 	// musicFolders - returned only in GetMusicFolders
-	musicFolders apiMusicFolderContainer
+	MusicFolders apiMusicFolderContainer
 
 	// indexes - returned only in GetIndexes
-	indexes apiIndexesContainer
+	Indexes apiIndexesContainer
 
 	// directory - returned only in GetMusicDirectory
-	directory apiMusicDirectoryContainer
+	Directory apiMusicDirectoryContainer
 
 	// nowPlaying - returned only in GetNowPlaying
-	nowPlaying apiNowPlayingContainer
+	NowPlaying interface{}
 }
 
-// SubsonicLicense represents the license status of Subsonic
-type SubsonicLicense struct {
+// License represents the license status of Subsonic
+type License struct {
 	// Raw values
 	Valid   bool
 	Email   string
@@ -66,11 +66,11 @@ type MusicFolder struct {
 
 // apiIndexesContainer represents the container for a slice of Index structs
 type apiIndexesContainer struct {
-	Index []SubsonicIndex
+	Index []Index
 }
 
-// SubsonicIndex represents a group in the Subsonic index
-type SubsonicIndex struct {
+// Index represents a group in the Subsonic index
+type Index struct {
 	// Raw values
 	Name      string
 	ArtistRaw interface{} `json:"artist"`
@@ -85,13 +85,13 @@ type IndexArtist struct {
 	Name string
 }
 
-// apiMusicDirectoryContainer represents the container for a slice of SubsonicDirectory structs
+// apiMusicDirectoryContainer represents the container for a slice of Directory structs
 type apiMusicDirectoryContainer struct {
 	Child interface{}
 }
 
-// SubsonicDirectory represents a media directory from Subsonic
-type SubsonicDirectory struct {
+// Directory represents a media directory from Subsonic
+type Directory struct {
 	// Raw values
 	ID         int64
 	Title      string

@@ -18,17 +18,17 @@ const (
 	APIVERSION = "1.8.0"
 )
 
-// SubsonicClient represents the required parameters to connect to a Subsonic server
-type SubsonicClient struct {
+// Client represents the required parameters to connect to a Subsonic server
+type Client struct {
 	Host     string
 	Username string
 	Password string
 }
 
-// New creates a new SubsonicClient using the specified parameters
-func New(host string, username string, password string) (*SubsonicClient, error) {
+// New creates a new Client using the specified parameters
+func New(host string, username string, password string) (*Client, error) {
 	// Generate a new Subsonic client
-	client := SubsonicClient{
+	client := Client{
 		Host:     host,
 		Username: username,
 		Password: password,
@@ -42,7 +42,7 @@ func New(host string, username string, password string) (*SubsonicClient, error)
 // -- System --
 
 // Ping checks the connectivity of a Subsonic server
-func (s SubsonicClient) Ping() (*APIStatus, error) {
+func (s Client) Ping() (*APIStatus, error) {
 	// Nil error means that ping is successful
 	res, err := fetchJSON(s.makeURL("ping"))
 	if err != nil {
@@ -53,7 +53,7 @@ func (s SubsonicClient) Ping() (*APIStatus, error) {
 }
 
 // GetLicense retrieves details about the Subsonic server license
-func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
+func (s Client) GetLicense() (*License, error) {
 	// Retrieve license information from Subsonic
 	res, err := fetchJSON(s.makeURL("getLicense"))
 	if err != nil {
@@ -61,25 +61,25 @@ func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
 	}
 
 	// Check for a license in the response
-	if &res.Response.license == nil {
+	if &res.Response.License == nil {
 		return nil, errors.New("gosubsonic: no license found")
 	}
 
 	// Parse raw date into a time.Time struct, using the special Go date for parsing
 	// reference: http://golang.org/pkg/time/#Parse
-	t, err := time.Parse("2006-01-02T15:04:05", res.Response.license.DateRaw)
+	t, err := time.Parse("2006-01-02T15:04:05", res.Response.License.DateRaw)
 	if err != nil {
 		return nil, err
 	}
-	res.Response.license.Date = t
+	res.Response.License.Date = t
 
-	return &res.Response.license, nil
+	return &res.Response.License, nil
 }
 
 // -- Browsing --
 
 // GetMusicFolders returns the configured top-level music folders
-func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
+func (s Client) GetMusicFolders() ([]MusicFolder, error) {
 	// Retrieve top-level music folders from Subsonic
 	res, err := fetchJSON(s.makeURL("getMusicFolders"))
 	if err != nil {
@@ -93,7 +93,7 @@ func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	mf := res.Response.musicFolders.MusicFolder
+	mf := res.Response.MusicFolders.MusicFolder
 	switch mf.(type) {
 	// Single item
 	case map[string]interface{}:
@@ -127,7 +127,7 @@ func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
 }
 
 // GetIndexes returns an indexed structure of all artists from Subsonic
-func (s SubsonicClient) GetIndexes(folderID int64, modified int64) ([]SubsonicIndex, error) {
+func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 	// Additional parameters for query
 	query := ""
 
@@ -148,10 +148,10 @@ func (s SubsonicClient) GetIndexes(folderID int64, modified int64) ([]SubsonicIn
 	}
 
 	// Generate new index with proper information
-	outIndex := make([]SubsonicIndex, 0)
+	outIndex := make([]Index, 0)
 
-	// Iterate all raw SubsonicIndex structs
-	for _, index := range res.Response.indexes.Index {
+	// Iterate all raw Index structs
+	for _, index := range res.Response.Indexes.Index {
 		// Slice of IndexArtist structs to output
 		artists := make([]IndexArtist, 0)
 
@@ -198,21 +198,21 @@ func (s SubsonicClient) GetIndexes(folderID int64, modified int64) ([]SubsonicIn
 }
 
 // GetMusicDirectory returns a list of all files in a music directory
-func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, error) {
+func (s Client) GetMusicDirectory(folderID int64) ([]Directory, error) {
 	// Retrieve a list of files in a given directory from Subsonic
 	res, err := fetchJSON(s.makeURL("getMusicDirectory") + "&id=" + strconv.FormatInt(folderID, 10))
 	if err != nil {
 		return nil, err
 	}
 
-	// Slice of SubsonicDirectory structs to return
-	directories := make([]SubsonicDirectory, 0)
+	// Slice of Directory structs to return
+	directories := make([]Directory, 0)
 
 	// Slice of interfaces to parse out response
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	ch := res.Response.directory.Child
+	ch := res.Response.Directory.Child
 	switch ch.(type) {
 	// Single item
 	case map[string]interface{}:
@@ -230,7 +230,7 @@ func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, 
 		// Type hint to appropriate type
 		if m, ok := i.(map[string]interface{}); ok {
 			// Create a directory from the map
-			s := SubsonicDirectory{
+			s := Directory{
 				// Note: ID is always an int64, so we can safely convert the float64
 				ID:         int64(m["id"].(float64)),
 				Title:      m["title"].(string),
@@ -242,6 +242,9 @@ func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, 
 			// Subsonic problem: albums with numeric titles return as integers
 			// Therefore, we have to check for a float64 as well
 			switch m["album"].(type) {
+			// No album title
+			case nil:
+				break
 			case string:
 				s.Album = m["album"].(string)
 			case float64:
@@ -273,12 +276,18 @@ func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, 
 
 // -- Album/song lists --
 
-// GetNowPlaying returns a list of all files in a music directory
-func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
+// GetNowPlaying returns a list of tracks which are currently being played
+func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 	// Retreive all tracks currently playing from Subsonic
 	res, err := fetchJSON(s.makeURL("getNowPlaying"))
 	if err != nil {
 		return nil, err
+	}
+
+	// Subsonic problem: when no songs are playing, the apiNowPlayingContainer will be an empty string
+	// To work around this, we have to check if it's a string and bail out if so
+	if _, ok := res.Response.NowPlaying.(string); ok {
+		return nil, nil
 	}
 
 	// Slice of NowPlaying structs to return
@@ -288,10 +297,8 @@ func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	en := res.Response.nowPlaying.Entry
+	en := res.Response.NowPlaying.(apiNowPlayingContainer).Entry
 	switch en.(type) {
-	// No items
-	case nil:
 	// Single item
 	case map[string]interface{}:
 		iface = append(iface, en.(interface{}))
@@ -383,7 +390,7 @@ type StreamOptions struct {
 }
 
 // Stream returns a io.ReadCloser which contains a media file stream, with an optional StreamOptions struct
-func (s SubsonicClient) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) {
+func (s Client) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) {
 	// Check for no options, which will do a simple stream
 	if options == nil {
 		return fetchBinary(s.makeURL("stream") + "&id=" + strconv.FormatInt(id, 10))
@@ -424,7 +431,7 @@ func (s SubsonicClient) Stream(id int64, options *StreamOptions) (io.ReadCloser,
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method
-func (s SubsonicClient) makeURL(method string) string {
+func (s Client) makeURL(method string) string {
 	return fmt.Sprintf("http://%s/rest/%s.view?u=%s&p=%s&c=%s&v=%s&f=json",
 		s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
 }
