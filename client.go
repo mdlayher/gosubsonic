@@ -193,6 +193,80 @@ func (s SubsonicClient) GetIndexes(folderID int64, modified int64) ([]SubsonicIn
 	return outIndex, nil
 }
 
+// GetMusicDirectory returns a list of all files in a music directory
+func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, error) {
+	// Retrieve a list of files in a given directory from Subsonic
+	res, err := fetchJSON(s.makeURL("getMusicDirectory") + "&id=" + strconv.FormatInt(folderID, 10))
+	if err != nil {
+		return nil, err
+	}
+
+	// Slice of SubsonicDirectory structs to return
+	directories := make([]SubsonicDirectory, 0)
+
+	// Slice of interfaces to parse out response
+	iface := make([]interface{}, 0)
+
+	// Parse response from interface{}, which may be one or more items
+	ch := res.Response.Directory.Child
+	switch ch.(type) {
+	// Single item
+	case map[string]interface{}:
+		iface = append(iface, ch.(interface{}))
+	// Multiple items
+	case []interface{}:
+		iface = ch.([]interface{})
+	// Unknown case
+	default:
+		return nil, errors.New("gosubsonic: failed to parse getMusicDirectory response")
+	}
+
+	// Iterate each item
+	for _, i := range iface {
+		// Type hint to appropriate type
+		if m, ok := i.(map[string]interface{}); ok {
+			// Create a directory from the map
+			s := SubsonicDirectory{
+				// Note: ID is always an int64, so we can safely convert the float64
+				ID:         int64(m["id"].(float64)),
+				Title:      m["title"].(string),
+				CreatedRaw: m["created"].(string),
+				Parent:     int64(m["parent"].(float64)),
+				IsDir:      m["isDir"].(bool),
+			}
+
+			// Subsonic problem: albums with numeric titles return as integers
+			// Therefore, we have to check for a float64 as well
+			switch m["album"].(type) {
+			case string:
+				s.Album = m["album"].(string)
+			case float64:
+				s.Album = strconv.FormatInt(int64(m["album"].(float64)), 10)
+			default:
+				return nil, errors.New("gosubsonic: unknown Album data type for getMusicDirectory")
+			}
+
+			// Some albums may not have cover art, so we check individually for it
+			if c, ok := m["coverArt"].(float64); ok {
+				s.CoverArt = int64(c)
+			}
+
+			// Parse CreatedRaw into a time.Time struct
+			t, err := time.Parse("2006-01-02T15:04:05", s.CreatedRaw)
+			if err != nil {
+				return nil, err
+			}
+			s.Created = t
+
+			// Add directory to collection
+			directories = append(directories, s)
+		}
+	}
+
+	// Return output directories
+	return directories, nil
+}
+
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method
@@ -217,7 +291,7 @@ func fetchJSON(url string) (*APIContainer, error) {
 	var subRes APIContainer
 	err = json.Unmarshal(body, &subRes)
 	if err != nil {
-		return nil, errors.New("Failed to parse response JSON: " + url)
+		return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
 	}
 
 	// Check for any errors in response object
