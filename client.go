@@ -290,6 +290,8 @@ func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
 	// Parse response from interface{}, which may be one or more items
 	en := res.Response.nowPlaying.Entry
 	switch en.(type) {
+	// No items
+	case nil:
 	// Single item
 	case map[string]interface{}:
 		iface = append(iface, en.(interface{}))
