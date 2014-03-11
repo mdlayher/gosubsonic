@@ -237,6 +237,7 @@ func (s Client) GetMusicDirectory(folderID int64) ([]Directory, error) {
 				CreatedRaw: m["created"].(string),
 				Parent:     int64(m["parent"].(float64)),
 				IsDir:      m["isDir"].(bool),
+				Artist:     m["artist"].(string),
 			}
 
 			// Subsonic problem: albums with numeric titles return as integers
