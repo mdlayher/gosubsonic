@@ -265,13 +265,13 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				d := Directory{
 					// Note: ID is always an int64, so we can safely convert the float64
 					ID:         int64(m["id"].(float64)),
-					Title:      m["title"].(string),
-					CreatedRaw: m["created"].(string),
-					Parent:     int64(m["parent"].(float64)),
-					Artist:     m["artist"].(string),
 					Album:      album,
+					Artist:     m["artist"].(string),
 					CoverArt:   coverArt,
 					Created:    created,
+					CreatedRaw: m["created"].(string),
+					Parent:     int64(m["parent"].(float64)),
+					Title:      m["title"].(string),
 				}
 
 				// Add directory to collection
@@ -280,26 +280,26 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				// If not, it's media
 				m := Media{
 					// Note: ID is always an int64, so we can safely convert the float64
-					Genre:       m["genre"].(string),
-					AlbumID:     int64(m["albumId"].(float64)),
-					Track:       int64(m["track"].(float64)),
-					Parent:      int64(m["parent"].(float64)),
-					ContentType: m["contentType"].(string),
-					Type:        m["type"].(string),
-					Suffix:      m["suffix"].(string),
-					DiscNumber:  int64(m["discNumber"].(float64)),
-					IsVideo:     m["isVideo"].(bool),
 					ID:          int64(m["id"].(float64)),
-					Title:       m["title"].(string),
-					CreatedRaw:  m["created"].(string),
-					DurationRaw: int64(m["duration"].(float64)),
-					ArtistID:    int64(m["artistId"].(float64)),
-					Path:        m["path"].(string),
-					Year:        int64(m["year"].(float64)),
-					Artist:      m["artist"].(string),
 					Album:       album,
+					AlbumID:     int64(m["albumId"].(float64)),
+					Artist:      m["artist"].(string),
+					ArtistID:    int64(m["artistId"].(float64)),
+					ContentType: m["contentType"].(string),
 					CoverArt:    coverArt,
 					Created:     created,
+					CreatedRaw:  m["created"].(string),
+					DiscNumber:  int64(m["discNumber"].(float64)),
+					DurationRaw: int64(m["duration"].(float64)),
+					Genre:       m["genre"].(string),
+					IsVideo:     m["isVideo"].(bool),
+					Parent:      int64(m["parent"].(float64)),
+					Path:        m["path"].(string),
+					Suffix:      m["suffix"].(string),
+					Title:       m["title"].(string),
+					Track:       int64(m["track"].(float64)),
+					Type:        m["type"].(string),
+					Year:        int64(m["year"].(float64)),
 				}
 
 				// Parse DurationRaw into a time.Duration struct
@@ -361,27 +361,27 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 		if m, ok := i.(map[string]interface{}); ok {
 			// Create a now playing entry from the map
 			n := NowPlaying{
+				ID:          int64(m["id"].(float64)),
+				AlbumID:     int64(m["albumId"].(float64)),
+				Artist:      m["artist"].(string),
+				ArtistID:    int64(m["artistId"].(float64)),
+				BitRate:     int64(m["bitRate"].(float64)),
+				ContentType: m["contentType"].(string),
+				CreatedRaw:  m["created"].(string),
+				DiscNumber:  int64(m["discNumber"].(float64)),
+				DurationRaw: int64(m["duration"].(float64)),
 				Genre:       m["genre"].(string),
 				IsDir:       m["isDir"].(bool),
-				ContentType: m["contentType"].(string),
 				IsVideo:     m["isVideo"].(bool),
-				ID:          int64(m["id"].(float64)),
-				Title:       m["title"].(string),
-				CreatedRaw:  m["created"].(string),
-				ArtistID:    int64(m["artistId"].(float64)),
-				Path:        m["path"].(string),
-				Year:        int64(m["year"].(float64)),
-				Artist:      m["artist"].(string),
 				MinutesAgo:  int64(m["minutesAgo"].(float64)),
-				AlbumID:     int64(m["albumId"].(float64)),
-				Track:       int64(m["track"].(float64)),
 				Parent:      int64(m["parent"].(float64)),
-				DiscNumber:  int64(m["discNumber"].(float64)),
-				Suffix:      m["suffix"].(string),
-				Size:        int64(m["size"].(float64)),
-				DurationRaw: int64(m["duration"].(float64)),
+				Path:        m["path"].(string),
 				PlayerID:    int64(m["playerId"].(float64)),
-				BitRate:     int64(m["bitRate"].(float64)),
+				Size:        int64(m["size"].(float64)),
+				Suffix:      m["suffix"].(string),
+				Title:       m["title"].(string),
+				Track:       int64(m["track"].(float64)),
+				Year:        int64(m["year"].(float64)),
 			}
 
 			// Subsonic problem: albums with numeric titles return as integers

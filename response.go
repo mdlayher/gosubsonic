@@ -11,16 +11,16 @@ type apiContainer struct {
 
 // APIError represents any errors reported by Subsonic
 type APIError struct {
-	Message string
 	Code    int
+	Message string
 }
 
 // APIStatus represents the current status of Subsonic
 type APIStatus struct {
 	// Common fields
-	Xmlns   string
 	Status  string
 	Version string
+	Xmlns   string
 
 	// API error - returned only when an error occurs
 	Error APIError
@@ -44,10 +44,10 @@ type APIStatus struct {
 // License represents the license status of Subsonic
 type License struct {
 	// Raw values
-	Valid   bool
-	Email   string
 	DateRaw string `json:"date"`
+	Email   string
 	Key     string
+	Valid   bool
 
 	// Parsed values
 	Date time.Time
@@ -92,34 +92,34 @@ type apiMusicDirectoryContainer struct {
 
 // Content is a container used to contain the Media and Directory structs residing in this Directory
 type Content struct {
-	Media       []Media
 	Directories []Directory
+	Media       []Media
 }
 
 // Media represents a media item from Subsonic
 type Media struct {
 	// Raw values
-	Genre       string
-	AlbumID     int64
-	Album       string
-	Track       int64
-	Parent      int64
-	ContentType string
-	Type        string
-	Suffix      string
-	DiscNumber  int64
-	IsVideo     bool
-	Size        int64
 	ID          int64
-	Title       string
-	DurationRaw int64 `json:"duration"`
-	ArtistID    int64
-	CreatedRaw  string `json:"created"`
-	Path        string
-	Year        int64
+	Album       string
+	AlbumID     int64
 	Artist      string
+	ArtistID    int64
 	BitRate     int64
+	ContentType string
 	CoverArt    int64
+	CreatedRaw  string `json:"created"`
+	DiscNumber  int64
+	DurationRaw int64 `json:"duration"`
+	Genre       string
+	IsVideo     bool
+	Parent      int64
+	Path        string
+	Size        int64
+	Suffix      string
+	Title       string
+	Track       int64
+	Type        string
+	Year        int64
 
 	// Parsed values
 	Created  time.Time
@@ -130,12 +130,12 @@ type Media struct {
 type Directory struct {
 	// Raw values
 	ID         int64
-	Title      string
-	CreatedRaw string `json:"created"`
 	Album      string
-	Parent     int64
 	Artist     string
 	CoverArt   int64
+	CreatedRaw string `json:"created"`
+	Parent     int64
+	Title      string
 
 	// Parsed values
 	Created time.Time
@@ -149,30 +149,30 @@ type apiNowPlayingContainer struct {
 // NowPlaying represents a now playing entry from Subsonic
 type NowPlaying struct {
 	// Raw values
-	Genre       string
-	Album       string
-	IsDir       bool
-	ContentType string
-	IsVideo     bool
 	ID          int64
-	Title       string
-	Username    string
-	CreatedRaw  string `json:"created"`
-	ArtistID    int64
-	Path        string
-	Year        int64
-	Artist      string
-	MinutesAgo  int64
+	Album       string
 	AlbumID     int64
-	Track       int64
-	Parent      int64
-	DiscNumber  int64
-	Suffix      string
-	Size        int64
-	DurationRaw int64
-	PlayerID    int64
+	Artist      string
+	ArtistID    int64
 	BitRate     int64
+	ContentType string
 	CoverArt    int64
+	CreatedRaw  string `json:"created"`
+	DiscNumber  int64
+	DurationRaw int64
+	Genre       string
+	IsDir       bool
+	IsVideo     bool
+	MinutesAgo  int64
+	Parent      int64
+	Path        string
+	PlayerID    int64
+	Size        int64
+	Suffix      string
+	Title       string
+	Track       int64
+	Username    string
+	Year        int64
 
 	// Parsed values
 	Created  time.Time
