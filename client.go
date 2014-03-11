@@ -485,7 +485,7 @@ func (s Client) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) 
 }
 
 // Download returns a io.ReadCloser which contains a raw, non-transcoded media file stream
-func (s Client) Download (id int64) (io.ReadCloser, error) {
+func (s Client) Download(id int64) (io.ReadCloser, error) {
 	return fetchBinary(s.makeURL("download") + "&id=" + strconv.FormatInt(id, 10))
 }
 
