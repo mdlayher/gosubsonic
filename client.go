@@ -197,15 +197,16 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 	return outIndex, nil
 }
 
-// GetMusicDirectory returns a list of all files in a music directory
-func (s Client) GetMusicDirectory(folderID int64) ([]Directory, error) {
+// GetMusicDirectory returns a list of all content in a music directory
+func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 	// Retrieve a list of files in a given directory from Subsonic
 	res, err := fetchJSON(s.makeURL("getMusicDirectory") + "&id=" + strconv.FormatInt(folderID, 10))
 	if err != nil {
 		return nil, err
 	}
 
-	// Slice of Directory structs to return
+	// Slice of Media and Directory structs to return
+	media := make([]Media, 0)
 	directories := make([]Directory, 0)
 
 	// Slice of interfaces to parse out response
@@ -229,50 +230,93 @@ func (s Client) GetMusicDirectory(folderID int64) ([]Directory, error) {
 	for _, i := range iface {
 		// Type hint to appropriate type
 		if m, ok := i.(map[string]interface{}); ok {
-			// Create a directory from the map
-			s := Directory{
-				// Note: ID is always an int64, so we can safely convert the float64
-				ID:         int64(m["id"].(float64)),
-				Title:      m["title"].(string),
-				CreatedRaw: m["created"].(string),
-				Parent:     int64(m["parent"].(float64)),
-				IsDir:      m["isDir"].(bool),
-				Artist:     m["artist"].(string),
-			}
+			// First, we have to work out some shared fields between directories and media
 
 			// Subsonic problem: albums with numeric titles return as integers
 			// Therefore, we have to check for a float64 as well
+			var album string
 			switch m["album"].(type) {
 			// No album title
 			case nil:
 				break
 			case string:
-				s.Album = m["album"].(string)
+				album = m["album"].(string)
 			case float64:
-				s.Album = strconv.FormatInt(int64(m["album"].(float64)), 10)
+				album = strconv.FormatInt(int64(m["album"].(float64)), 10)
 			default:
 				return nil, errors.New("gosubsonic: unknown Album data type for getMusicDirectory")
 			}
 
 			// Some albums may not have cover art, so we check individually for it
+			var coverArt int64
 			if c, ok := m["coverArt"].(float64); ok {
-				s.CoverArt = int64(c)
+				coverArt = int64(c)
 			}
 
 			// Parse CreatedRaw into a time.Time struct
-			t, err := time.Parse("2006-01-02T15:04:05", s.CreatedRaw)
+			created, err := time.Parse("2006-01-02T15:04:05", m["created"].(string))
 			if err != nil {
 				return nil, err
 			}
-			s.Created = t
 
-			// Add directory to collection
-			directories = append(directories, s)
+			// Is this a directory?
+			if b, ok := m["isDir"].(bool); b && ok {
+				// Create a directory from the map
+				d := Directory{
+					// Note: ID is always an int64, so we can safely convert the float64
+					ID:         int64(m["id"].(float64)),
+					Title:      m["title"].(string),
+					CreatedRaw: m["created"].(string),
+					Parent:     int64(m["parent"].(float64)),
+					Artist:     m["artist"].(string),
+					Album:      album,
+					CoverArt:   coverArt,
+					Created:    created,
+				}
+
+				// Add directory to collection
+				directories = append(directories, d)
+			} else {
+				// If not, it's media
+				m := Media{
+					// Note: ID is always an int64, so we can safely convert the float64
+					Genre:       m["genre"].(string),
+					AlbumID:     int64(m["albumId"].(float64)),
+					Track:       int64(m["track"].(float64)),
+					Parent:      int64(m["parent"].(float64)),
+					ContentType: m["contentType"].(string),
+					Type:        m["type"].(string),
+					Suffix:      m["suffix"].(string),
+					DiscNumber:  int64(m["discNumber"].(float64)),
+					IsVideo:     m["isVideo"].(bool),
+					ID:          int64(m["id"].(float64)),
+					Title:       m["title"].(string),
+					CreatedRaw:  m["created"].(string),
+					DurationRaw: int64(m["duration"].(float64)),
+					ArtistID:    int64(m["artistId"].(float64)),
+					Path:        m["path"].(string),
+					Year:        int64(m["year"].(float64)),
+					Artist:      m["artist"].(string),
+					Album:       album,
+					CoverArt:    coverArt,
+					Created:     created,
+				}
+
+				// Parse DurationRaw into a time.Duration struct
+				d, err := time.ParseDuration(strconv.FormatInt(m.DurationRaw, 10) + "s")
+				if err != nil {
+					return nil, err
+				}
+				m.Duration = d
+
+				// Add media to collection
+				media = append(media, m)
+			}
 		}
 	}
 
-	// Return output directories
-	return directories, nil
+	// Return output content
+	return &Content{Media: media, Directories: directories}, nil
 }
 
 // -- Album/song lists --
@@ -383,10 +427,10 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 
 // StreamOptions represents additional options for the Stream() method
 type StreamOptions struct {
-	MaxBitRate int64
-	Format string
-	TimeOffset int64
-	Size string
+	MaxBitRate            int64
+	Format                string
+	TimeOffset            int64
+	Size                  string
 	EstimateContentLength bool
 }
 

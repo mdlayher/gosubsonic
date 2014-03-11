@@ -90,6 +90,42 @@ type apiMusicDirectoryContainer struct {
 	Child interface{}
 }
 
+// Content is a container used to contain the Media and Directory structs residing in this Directory
+type Content struct {
+	Media       []Media
+	Directories []Directory
+}
+
+// Media represents a media item from Subsonic
+type Media struct {
+	// Raw values
+	Genre       string
+	AlbumID     int64
+	Album       string
+	Track       int64
+	Parent      int64
+	ContentType string
+	Type        string
+	Suffix      string
+	DiscNumber  int64
+	IsVideo     bool
+	Size        int64
+	ID          int64
+	Title       string
+	DurationRaw int64 `json:"duration"`
+	ArtistID    int64
+	CreatedRaw  string `json:"created"`
+	Path        string
+	Year        int64
+	Artist      string
+	BitRate     int64
+	CoverArt    int64
+
+	// Parsed values
+	Created  time.Time
+	Duration time.Duration
+}
+
 // Directory represents a media directory from Subsonic
 type Directory struct {
 	// Raw values
@@ -98,7 +134,6 @@ type Directory struct {
 	CreatedRaw string `json:"created"`
 	Album      string
 	Parent     int64
-	IsDir      bool
 	Artist     string
 	CoverArt   int64
 
