@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -365,6 +367,56 @@ func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
 	return nowPlaying, nil
 }
 
+// -- Media retrieval --
+
+// StreamOptions represents additional options for the Stream() method
+type StreamOptions struct {
+	MaxBitRate int64
+	Format string
+	TimeOffset int64
+	Size string
+	EstimateContentLength bool
+}
+
+// Stream returns a io.ReadCloser which contains a media file stream, with an optional StreamOptions struct
+func (s SubsonicClient) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) {
+	// Check for no options, which will do a simple stream
+	if options == nil {
+		return fetchBinary(s.makeURL("stream") + "&id=" + strconv.FormatInt(id, 10))
+	}
+
+	// Check for additional options
+	optStr := ""
+
+	// maxBitRate
+	if options.MaxBitRate > 0 {
+		optStr = optStr + "&maxBitRate=" + strconv.FormatInt(options.MaxBitRate, 10)
+	}
+
+	// format
+	if options.Format != "" {
+		optStr = optStr + "&format=" + options.Format
+	}
+
+	// timeOffset
+	if options.TimeOffset > 0 {
+		optStr = optStr + "&timeOffset=" + strconv.FormatInt(options.TimeOffset, 10)
+	}
+
+	// size
+	if options.Size != "" {
+		optStr = optStr + "&size=" + options.Size
+	}
+
+	// estimateContentLength
+	if options.EstimateContentLength {
+		optStr = optStr + "&estimateContentLength=true"
+	}
+
+	// Stream with options
+	return fetchBinary(s.makeURL("stream") + "&id=" + strconv.FormatInt(id, 10) + optStr)
+}
+
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method
@@ -373,12 +425,41 @@ func (s SubsonicClient) makeURL(method string) string {
 		s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
 }
 
-// fetchJSON from specified URL and parse into APIContainer
+// fetchBinary retrieves a binary stream from a specified URL and returns a io.ReadCloser on the stream
+func fetchBinary(url string) (io.ReadCloser, error) {
+	// Perform HTTP GET request
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
+	}
+
+	// Check for JSON content type, meaning file is not binary
+	if strings.Contains(res.Header.Get("Content-Type"), "application/json") {
+		// Read the entire response body, and defer it to be closed
+		body, err := ioutil.ReadAll(res.Body)
+		defer res.Body.Close()
+
+		// Unmarshal response JSON from API container
+		var subRes APIContainer
+		err = json.Unmarshal(body, &subRes)
+		if err != nil {
+			return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
+		}
+
+		// Return the error
+		return nil, fmt.Errorf("gosubsonic: %d: %s", subRes.Response.Error.Code, subRes.Response.Error.Message)
+	}
+
+	// Return response reader for body
+	return res.Body, nil
+}
+
+// fetchJSON retrives JSON from a specified URL and parses it into an APIContainer
 func fetchJSON(url string) (*APIContainer, error) {
 	// Make an API request
 	res, err := http.Get(url)
 	if err != nil {
-		return nil, errors.New("gosubsonic: HTTP request failed: " + url)
+		return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
 	}
 
 	// Read the entire response body, and defer it to be closed
