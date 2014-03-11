@@ -50,7 +50,6 @@ func (s SubsonicClient) Ping() error {
 // GetLicense retrieves details about the Subsonic server license
 func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
 	// Retrieve license information from Subsonic
-	fmt.Println(s.makeURL("getLicense"))
 	res, err := fetchJSON(s.makeURL("getLicense"))
 	if err != nil {
 		return nil, err
@@ -72,6 +71,55 @@ func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
 	return &res.Response.License, nil
 }
 
+// -- Browsing --
+
+// GetMusicFolders returns the configured top-level music folders
+func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
+	// Retrieve top-level music folders from Subsonic
+	res, err := fetchJSON(s.makeURL("getMusicFolders"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Slice of MusicFolders to return
+	folders := make([]MusicFolder, 0)
+
+	// Slice of interfaces to parse out response
+	iface := make([]interface{}, 0)
+
+	// Parse response from interface{}, which may be one or more items
+	mf := res.Response.MusicFolders.MusicFolder
+	switch mf.(type) {
+	// Single item
+	case map[string]interface{}:
+		iface = append(iface, mf.(interface{}))
+	// Multiple items
+	case []interface{}:
+		iface = mf.([]interface{})
+	}
+
+	// Iterate each item
+	for _, i := range iface {
+		// Type hint to appropriate type
+		if m, ok := i.(map[string]interface{}); ok {
+			// Create a music folder from the map
+			f := MusicFolder{
+				// Note: ID is always an int64, so we can safely convert the float64
+				ID: int64(m["id"].(float64)),
+				Name: m["name"].(string),
+			}
+
+			// Add folder to collection
+			folders = append(folders, f)
+		}
+	}
+
+	// Return output folders
+	return folders, nil
+}
+
+// -- Functions --
+
 // makeURL Generates a URL for an API call using given parameters and method
 func (s SubsonicClient) makeURL(method string) string {
 	return fmt.Sprintf("http://%s/rest/%s.view?u=%s&p=%s&c=%s&v=%s&f=json",
@@ -92,7 +140,7 @@ func fetchJSON(url string) (*APIContainer, error) {
 
 	// Unmarshal response JSON from API container
 	var subRes APIContainer
-	err = json.Unmarshal([]byte(body), &subRes)
+	err = json.Unmarshal(body, &subRes)
 	if err != nil {
 		return nil, errors.New("Failed to parse response JSON: " + url)
 	}

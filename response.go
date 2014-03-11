@@ -27,6 +27,9 @@ type APIStatus struct {
 
 	// License - returned only in GetLicense
 	License SubsonicLicense
+
+	// MusicFolders - returned only in GetMusicFolders
+	MusicFolders MusicFolderContainer
 }
 
 // SubsonicLicense represents the license status of Subsonic
@@ -39,4 +42,15 @@ type SubsonicLicense struct {
 
 	// Parsed values
 	Date time.Time
+}
+
+// MusicFolderContainer represents the container for one or more MusicFolders
+type MusicFolderContainer struct {
+	MusicFolder interface{}
+}
+
+// MusicFolder represents a top-level music folders of Subsonic
+type MusicFolder struct {
+	ID int64
+	Name string
 }
