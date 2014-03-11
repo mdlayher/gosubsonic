@@ -247,6 +247,17 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				return nil, errors.New("gosubsonic: unknown Album data type for getMusicDirectory")
 			}
 
+			// Same thing with song title
+			var title string
+			switch m["title"].(type) {
+			case string:
+				title = m["title"].(string)
+			case float64:
+				title = strconv.FormatInt(int64(m["title"].(float64)), 10)
+			default:
+				return nil, errors.New("gosubsonic: unknown Title data type for getMusicDirectory")
+			}
+
 			// Some albums may not have cover art, so we check individually for it
 			var coverArt int64
 			if c, ok := m["coverArt"].(float64); ok {
@@ -271,7 +282,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					Created:    created,
 					CreatedRaw: m["created"].(string),
 					Parent:     int64(m["parent"].(float64)),
-					Title:      m["title"].(string),
+					Title:      title,
 				}
 
 				// Add directory to collection
@@ -296,7 +307,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					Parent:      int64(m["parent"].(float64)),
 					Path:        m["path"].(string),
 					Suffix:      m["suffix"].(string),
-					Title:       m["title"].(string),
+					Title:       title,
 					Track:       int64(m["track"].(float64)),
 					Type:        m["type"].(string),
 					Year:        int64(m["year"].(float64)),
