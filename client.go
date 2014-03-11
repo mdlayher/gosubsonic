@@ -445,7 +445,7 @@ type StreamOptions struct {
 	EstimateContentLength bool
 }
 
-// Stream returns a io.ReadCloser which contains a media file stream, with an optional StreamOptions struct
+// Stream returns a io.ReadCloser which contains a processed media file stream, with an optional StreamOptions struct
 func (s Client) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) {
 	// Check for no options, which will do a simple stream
 	if options == nil {
@@ -482,6 +482,11 @@ func (s Client) Stream(id int64, options *StreamOptions) (io.ReadCloser, error) 
 
 	// Stream with options
 	return fetchBinary(s.makeURL("stream") + "&id=" + strconv.FormatInt(id, 10) + optStr)
+}
+
+// Download returns a io.ReadCloser which contains a raw, non-transcoded media file stream
+func (s Client) Download (id int64) (io.ReadCloser, error) {
+	return fetchBinary(s.makeURL("download") + "&id=" + strconv.FormatInt(id, 10))
 }
 
 // -- Functions --
