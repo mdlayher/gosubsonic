@@ -36,6 +36,9 @@ type APIStatus struct {
 
 	// Directory - returned only in GetMusicDirectory
 	Directory MusicDirectoryContainer
+
+	// NowPlaying - returned only in GetNowPlaying
+	NowPlaying NowPlayingContainer
 }
 
 // SubsonicLicense represents the license status of Subsonic
@@ -101,4 +104,42 @@ type SubsonicDirectory struct {
 
 	// Parsed values
 	Created time.Time
+}
+
+// NowPlayingContainer represents the container for a slice of NowPlaying structs
+type NowPlayingContainer struct {
+	Entry interface{}
+}
+
+// NowPlaying represents a now playing entry from Subsonic
+type NowPlaying struct {
+	// Raw values
+	Genre       string
+	Album       string
+	IsDir       bool
+	ContentType string
+	IsVideo     bool
+	ID          int64
+	Title       string
+	Username    string
+	CreatedRaw  string `json:"created"`
+	ArtistID    int64
+	Path        string
+	Year        int64
+	Artist      string
+	MinutesAgo  int64
+	AlbumID     int64
+	Track       int64
+	Parent      int64
+	DiscNumber  int64
+	Suffix      string
+	Size        int64
+	DurationRaw int64
+	PlayerID    int64
+	BitRate     int64
+	CoverArt    int64
+
+	// Parsed values
+	Created  time.Time
+	Duration time.Duration
 }

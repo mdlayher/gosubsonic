@@ -267,6 +267,104 @@ func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, 
 	return directories, nil
 }
 
+// -- Album/song lists --
+
+// GetNowPlaying returns a list of all files in a music directory
+func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
+	// Retreive all tracks currently playing from Subsonic
+	res, err := fetchJSON(s.makeURL("getNowPlaying"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Slice of NowPlaying structs to return
+	nowPlaying := make([]NowPlaying, 0)
+
+	// Slice of interfaces to parse out response
+	iface := make([]interface{}, 0)
+
+	// Parse response from interface{}, which may be one or more items
+	en := res.Response.NowPlaying.Entry
+	switch en.(type) {
+	// Single item
+	case map[string]interface{}:
+		iface = append(iface, en.(interface{}))
+	// Multiple items
+	case []interface{}:
+		iface = en.([]interface{})
+	// Unknown case
+	default:
+		return nil, errors.New("gosubsonic: failed to parse getNowPlaying response")
+	}
+
+	// Iterate each item
+	for _, i := range iface {
+		// Type hint to appropriate type
+		if m, ok := i.(map[string]interface{}); ok {
+			// Create a now playing entry from the map
+			n := NowPlaying{
+				Genre:       m["genre"].(string),
+				IsDir:       m["isDir"].(bool),
+				ContentType: m["contentType"].(string),
+				IsVideo:     m["isVideo"].(bool),
+				ID:          int64(m["id"].(float64)),
+				Title:       m["title"].(string),
+				CreatedRaw:  m["created"].(string),
+				ArtistID:    int64(m["artistId"].(float64)),
+				Path:        m["path"].(string),
+				Year:        int64(m["year"].(float64)),
+				Artist:      m["artist"].(string),
+				MinutesAgo:  int64(m["minutesAgo"].(float64)),
+				AlbumID:     int64(m["albumId"].(float64)),
+				Track:       int64(m["track"].(float64)),
+				Parent:      int64(m["parent"].(float64)),
+				DiscNumber:  int64(m["discNumber"].(float64)),
+				Suffix:      m["suffix"].(string),
+				Size:        int64(m["size"].(float64)),
+				DurationRaw: int64(m["duration"].(float64)),
+				PlayerID:    int64(m["playerId"].(float64)),
+				BitRate:     int64(m["bitRate"].(float64)),
+			}
+
+			// Subsonic problem: albums with numeric titles return as integers
+			// Therefore, we have to check for a float64 as well
+			switch m["album"].(type) {
+			case string:
+				n.Album = m["album"].(string)
+			case float64:
+				n.Album = strconv.FormatInt(int64(m["album"].(float64)), 10)
+			default:
+				return nil, errors.New("gosubsonic: unknown Album data type for getNowPlaying")
+			}
+
+			// Some albums may not have cover art, so we check individually for it
+			if c, ok := m["coverArt"].(float64); ok {
+				n.CoverArt = int64(c)
+			}
+
+			// Parse CreatedRaw into a time.Time struct
+			t, err := time.Parse("2006-01-02T15:04:05", n.CreatedRaw)
+			if err != nil {
+				return nil, err
+			}
+			n.Created = t
+
+			// Parse DurationRaw into a time.Duration struct
+			d, err := time.ParseDuration(strconv.FormatInt(n.DurationRaw, 10) + "s")
+			if err != nil {
+				return nil, err
+			}
+			n.Duration = d
+
+			// Add now playing to collection
+			nowPlaying = append(nowPlaying, n)
+		}
+	}
+
+	// Return output entries
+	return nowPlaying, nil
+}
+
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method
