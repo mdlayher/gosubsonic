@@ -96,6 +96,9 @@ func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
 	// Multiple items
 	case []interface{}:
 		iface = mf.([]interface{})
+	// Unknown case
+	default:
+		return nil, errors.New("gosubsonic: failed to parse getMusicFolders response")
 	}
 
 	// Iterate each item
