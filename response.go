@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// APIContainer represents the top-level response from Subsonic
-type APIContainer struct {
+// apiContainer represents the top-level response from Subsonic
+type apiContainer struct {
 	Response APIStatus `json:"subsonic-response"`
 }
 
@@ -25,20 +25,20 @@ type APIStatus struct {
 	// API error - returned only when an error occurs
 	Error APIError
 
-	// License - returned only in GetLicense
-	License SubsonicLicense
+	// license - returned only in GetLicense
+	license SubsonicLicense
 
-	// MusicFolders - returned only in GetMusicFolders
-	MusicFolders MusicFolderContainer
+	// musicFolders - returned only in GetMusicFolders
+	musicFolders apiMusicFolderContainer
 
-	// Indexes - returned only in GetIndexes
-	Indexes IndexesContainer
+	// indexes - returned only in GetIndexes
+	indexes apiIndexesContainer
 
-	// Directory - returned only in GetMusicDirectory
-	Directory MusicDirectoryContainer
+	// directory - returned only in GetMusicDirectory
+	directory apiMusicDirectoryContainer
 
-	// NowPlaying - returned only in GetNowPlaying
-	NowPlaying NowPlayingContainer
+	// nowPlaying - returned only in GetNowPlaying
+	nowPlaying apiNowPlayingContainer
 }
 
 // SubsonicLicense represents the license status of Subsonic
@@ -53,8 +53,8 @@ type SubsonicLicense struct {
 	Date time.Time
 }
 
-// MusicFolderContainer represents the container for one or more MusicFolders
-type MusicFolderContainer struct {
+// apiMusicFolderContainer represents the container for one or more MusicFolders
+type apiMusicFolderContainer struct {
 	MusicFolder interface{}
 }
 
@@ -64,8 +64,8 @@ type MusicFolder struct {
 	Name string
 }
 
-// IndexesContainer represents the container for a slice of Index structs
-type IndexesContainer struct {
+// apiIndexesContainer represents the container for a slice of Index structs
+type apiIndexesContainer struct {
 	Index []SubsonicIndex
 }
 
@@ -85,8 +85,8 @@ type IndexArtist struct {
 	Name string
 }
 
-// MusicDirectoryContainer represents the container for a slice of SubsonicDirectory structs
-type MusicDirectoryContainer struct {
+// apiMusicDirectoryContainer represents the container for a slice of SubsonicDirectory structs
+type apiMusicDirectoryContainer struct {
 	Child interface{}
 }
 
@@ -106,8 +106,8 @@ type SubsonicDirectory struct {
 	Created time.Time
 }
 
-// NowPlayingContainer represents the container for a slice of NowPlaying structs
-type NowPlayingContainer struct {
+// apiNowPlayingContainer represents the container for a slice of NowPlaying structs
+type apiNowPlayingContainer struct {
 	Entry interface{}
 }
 

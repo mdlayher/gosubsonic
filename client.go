@@ -35,19 +35,21 @@ func New(host string, username string, password string) (*SubsonicClient, error)
 	}
 
 	// Attempt to ping the Subsonic server
-	return &client, client.Ping()
+	_, err := client.Ping()
+	return &client, err
 }
 
 // -- System --
 
 // Ping checks the connectivity of a Subsonic server
-func (s SubsonicClient) Ping() error {
+func (s SubsonicClient) Ping() (*APIStatus, error) {
 	// Nil error means that ping is successful
-	if _, err := fetchJSON(s.makeURL("ping")); err != nil {
-		return err
+	res, err := fetchJSON(s.makeURL("ping"))
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &res.Response, nil
 }
 
 // GetLicense retrieves details about the Subsonic server license
@@ -59,19 +61,19 @@ func (s SubsonicClient) GetLicense() (*SubsonicLicense, error) {
 	}
 
 	// Check for a license in the response
-	if res.Response.License == (SubsonicLicense{}) {
+	if &res.Response.license == nil {
 		return nil, errors.New("gosubsonic: no license found")
 	}
 
 	// Parse raw date into a time.Time struct, using the special Go date for parsing
 	// reference: http://golang.org/pkg/time/#Parse
-	t, err := time.Parse("2006-01-02T15:04:05", res.Response.License.DateRaw)
+	t, err := time.Parse("2006-01-02T15:04:05", res.Response.license.DateRaw)
 	if err != nil {
 		return nil, err
 	}
-	res.Response.License.Date = t
+	res.Response.license.Date = t
 
-	return &res.Response.License, nil
+	return &res.Response.license, nil
 }
 
 // -- Browsing --
@@ -91,7 +93,7 @@ func (s SubsonicClient) GetMusicFolders() ([]MusicFolder, error) {
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	mf := res.Response.MusicFolders.MusicFolder
+	mf := res.Response.musicFolders.MusicFolder
 	switch mf.(type) {
 	// Single item
 	case map[string]interface{}:
@@ -149,7 +151,7 @@ func (s SubsonicClient) GetIndexes(folderID int64, modified int64) ([]SubsonicIn
 	outIndex := make([]SubsonicIndex, 0)
 
 	// Iterate all raw SubsonicIndex structs
-	for _, index := range res.Response.Indexes.Index {
+	for _, index := range res.Response.indexes.Index {
 		// Slice of IndexArtist structs to output
 		artists := make([]IndexArtist, 0)
 
@@ -210,7 +212,7 @@ func (s SubsonicClient) GetMusicDirectory(folderID int64) ([]SubsonicDirectory, 
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	ch := res.Response.Directory.Child
+	ch := res.Response.directory.Child
 	switch ch.(type) {
 	// Single item
 	case map[string]interface{}:
@@ -286,7 +288,7 @@ func (s SubsonicClient) GetNowPlaying() ([]NowPlaying, error) {
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	en := res.Response.NowPlaying.Entry
+	en := res.Response.nowPlaying.Entry
 	switch en.(type) {
 	// Single item
 	case map[string]interface{}:
@@ -440,7 +442,7 @@ func fetchBinary(url string) (io.ReadCloser, error) {
 		defer res.Body.Close()
 
 		// Unmarshal response JSON from API container
-		var subRes APIContainer
+		var subRes apiContainer
 		err = json.Unmarshal(body, &subRes)
 		if err != nil {
 			return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
@@ -454,8 +456,8 @@ func fetchBinary(url string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-// fetchJSON retrives JSON from a specified URL and parses it into an APIContainer
-func fetchJSON(url string) (*APIContainer, error) {
+// fetchJSON retrives JSON from a specified URL and parses it into an apiContainer
+func fetchJSON(url string) (*apiContainer, error) {
 	// Make an API request
 	res, err := http.Get(url)
 	if err != nil {
@@ -467,7 +469,7 @@ func fetchJSON(url string) (*APIContainer, error) {
 	defer res.Body.Close()
 
 	// Unmarshal response JSON from API container
-	var subRes APIContainer
+	var subRes apiContainer
 	err = json.Unmarshal(body, &subRes)
 	if err != nil {
 		return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
