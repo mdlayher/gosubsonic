@@ -99,27 +99,29 @@ type Content struct {
 // Media represents a media item from Subsonic
 type Media struct {
 	// Raw values
-	ID          int64
-	Album       string
-	AlbumID     int64
-	Artist      string
-	ArtistID    int64
-	BitRate     int64
-	ContentType string
-	CoverArt    int64
-	CreatedRaw  string `json:"created"`
-	DiscNumber  int64
-	DurationRaw int64 `json:"duration"`
-	Genre       string
-	IsVideo     bool
-	Parent      int64
-	Path        string
-	Size        int64
-	Suffix      string
-	Title       string
-	Track       int64
-	Type        string
-	Year        int64
+	ID                    int64
+	Album                 string
+	AlbumID               int64
+	Artist                string
+	ArtistID              int64
+	BitRate               int64
+	ContentType           string
+	CoverArt              int64
+	CreatedRaw            string `json:"created"`
+	DiscNumber            int64
+	DurationRaw           int64 `json:"duration"`
+	Genre                 string
+	IsVideo               bool
+	Parent                int64
+	Path                  string
+	Size                  int64
+	Suffix                string
+	Title                 string
+	Track                 int64
+	TranscodedContentType string
+	TranscodedSuffix      string
+	Type                  string
+	Year                  int64
 
 	// Parsed values
 	Created  time.Time

@@ -288,33 +288,58 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				// Add directory to collection
 				directories = append(directories, d)
 			} else {
+				// For the time being, we will not support video media, so skip it
+				if b, ok := m["isVideo"].(bool); b && ok {
+					continue
+				}
+
 				// If not, it's media
 				med := Media{
 					// Note: ID is always an int64, so we can safely convert the float64
 					ID:          int64(m["id"].(float64)),
 					Album:       album,
-					AlbumID:     int64(m["albumId"].(float64)),
-					Artist:      m["artist"].(string),
-					ArtistID:    int64(m["artistId"].(float64)),
 					ContentType: m["contentType"].(string),
 					CoverArt:    coverArt,
 					Created:     created,
 					CreatedRaw:  m["created"].(string),
 					DurationRaw: int64(m["duration"].(float64)),
-					Genre:       m["genre"].(string),
 					IsVideo:     m["isVideo"].(bool),
 					Parent:      int64(m["parent"].(float64)),
 					Path:        m["path"].(string),
 					Suffix:      m["suffix"].(string),
 					Title:       title,
-					Track:       int64(m["track"].(float64)),
 					Type:        m["type"].(string),
-					Year:        int64(m["year"].(float64)),
 				}
 
-				// Some items may not have disc number, so we check individually for it
-				if c, ok := m["discNumber"].(float64); ok {
-					med.DiscNumber = int64(c)
+				// Subsonic is very inconsistent, so we have to check for optional items
+				if a, ok := m["albumId"].(float64); ok {
+					med.AlbumID = int64(a)
+				}
+				if a, ok := m["artist"].(string); ok {
+					med.Artist = a
+				}
+				if a, ok := m["artistId"].(float64); ok {
+					med.ArtistID = int64(a)
+				}
+				if d, ok := m["discNumber"].(float64); ok {
+					med.DiscNumber = int64(d)
+				}
+				if g, ok := m["genre"].(string); ok {
+					med.Genre = g
+				}
+				if t, ok := m["track"].(float64); ok {
+					med.Track = int64(t)
+				}
+				if y, ok := m["year"].(float64); ok {
+					med.Year = int64(y)
+				}
+
+				// Returned only in transcodes
+				if t, ok := m["transcodedContentType"].(string); ok {
+					med.TranscodedContentType = t
+				}
+				if t, ok := m["transcodedSuffix"].(string); ok {
+					med.TranscodedSuffix = t
 				}
 
 				// Parse DurationRaw into a time.Duration struct
@@ -541,6 +566,9 @@ func fetchJSON(url string) (*apiContainer, error) {
 	// Read the entire response body, and defer it to be closed
 	body, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
+
+	fmt.Println(url)
+	fmt.Println(string(body))
 
 	// Unmarshal response JSON from API container
 	var subRes apiContainer
