@@ -215,6 +215,9 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 	// Parse response from interface{}, which may be one or more items
 	ch := res.Response.Directory.Child
 	switch ch.(type) {
+	// No items
+	case nil:
+		break
 	// Single item
 	case map[string]interface{}:
 		iface = append(iface, ch.(interface{}))
