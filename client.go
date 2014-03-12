@@ -289,7 +289,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				directories = append(directories, d)
 			} else {
 				// If not, it's media
-				m := Media{
+				med := Media{
 					// Note: ID is always an int64, so we can safely convert the float64
 					ID:          int64(m["id"].(float64)),
 					Album:       album,
@@ -300,7 +300,6 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					CoverArt:    coverArt,
 					Created:     created,
 					CreatedRaw:  m["created"].(string),
-					DiscNumber:  int64(m["discNumber"].(float64)),
 					DurationRaw: int64(m["duration"].(float64)),
 					Genre:       m["genre"].(string),
 					IsVideo:     m["isVideo"].(bool),
@@ -313,15 +312,20 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					Year:        int64(m["year"].(float64)),
 				}
 
+				// Some items may not have disc number, so we check individually for it
+				if c, ok := m["discNumber"].(float64); ok {
+					med.DiscNumber = int64(c)
+				}
+
 				// Parse DurationRaw into a time.Duration struct
-				d, err := time.ParseDuration(strconv.FormatInt(m.DurationRaw, 10) + "s")
+				d, err := time.ParseDuration(strconv.FormatInt(med.DurationRaw, 10) + "s")
 				if err != nil {
 					return nil, err
 				}
-				m.Duration = d
+				med.Duration = d
 
 				// Add media to collection
-				media = append(media, m)
+				media = append(media, med)
 			}
 		}
 	}
