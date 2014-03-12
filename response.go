@@ -35,7 +35,7 @@ type APIStatus struct {
 	Indexes apiIndexesContainer
 
 	// directory - returned only in GetMusicDirectory
-	Directory apiMusicDirectoryContainer
+	Directory interface{}
 
 	// nowPlaying - returned only in GetNowPlaying
 	NowPlaying interface{}
