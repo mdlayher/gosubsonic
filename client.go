@@ -567,9 +567,6 @@ func fetchJSON(url string) (*apiContainer, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 
-	fmt.Println(url)
-	fmt.Println(string(body))
-
 	// Unmarshal response JSON from API container
 	var subRes apiContainer
 	err = json.Unmarshal(body, &subRes)
