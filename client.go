@@ -398,6 +398,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 						DurationRaw: durationRaw,
 						Parent:      parent,
 						Path:        path,
+						Size:        size,
 						Suffix:      suffix,
 						Title:       title,
 						Type:        mType,
