@@ -90,14 +90,30 @@ type apiMusicDirectoryContainer struct {
 	Child interface{}
 }
 
-// Content is a container used to contain the Media and Directory structs residing in this Directory
+// Content is a container used to contain the Directory, Audio, and Video structs residing in this Directory
 type Content struct {
+	Audio       []Audio
 	Directories []Directory
-	Media       []Media
+	Video       []Video
 }
 
-// Media represents a media item from Subsonic
-type Media struct {
+// Directory represents a media directory from Subsonic
+type Directory struct {
+	// Raw values
+	ID         int64
+	Album      string
+	Artist     string
+	CoverArt   int64
+	CreatedRaw string `json:"created"`
+	Parent     int64
+	Title      string
+
+	// Parsed values
+	Created time.Time
+}
+
+// Audio represents an audio item from Subsonic
+type Audio struct {
 	// Raw values
 	ID                    int64
 	Album                 string
@@ -111,7 +127,6 @@ type Media struct {
 	DiscNumber            int64
 	DurationRaw           int64 `json:"duration"`
 	Genre                 string
-	IsVideo               bool
 	Parent                int64
 	Path                  string
 	Size                  int64
@@ -128,19 +143,26 @@ type Media struct {
 	Duration time.Duration
 }
 
-// Directory represents a media directory from Subsonic
-type Directory struct {
+// Video represents a video item from Subsonic
+type Video struct {
 	// Raw values
-	ID         int64
-	Album      string
-	Artist     string
-	CoverArt   int64
-	CreatedRaw string `json:"created"`
-	Parent     int64
-	Title      string
+	ID                    int64
+	BitRate               int64
+	ContentType           string
+	CoverArt              int64
+	CreatedRaw            string `json:"created"`
+	DurationRaw           int64  `json:"duration"`
+	Parent                int64
+	Path                  string
+	Size                  int64
+	Suffix                string
+	Title                 string
+	TranscodedContentType string
+	TranscodedSuffix      string
 
 	// Parsed values
-	Created time.Time
+	Created  time.Time
+	Duration time.Duration
 }
 
 // apiNowPlayingContainer represents the container for a slice of NowPlaying structs

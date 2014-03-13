@@ -205,9 +205,10 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 		return nil, err
 	}
 
-	// Slice of Media and Directory structs to return
-	media := make([]Media, 0)
+	// Slice of Audio, Directory, Video structs to return
+	audio := make([]Audio, 0)
 	directories := make([]Directory, 0)
+	video := make([]Video, 0)
 
 	// Slice of interfaces to parse out response
 	iface := make([]interface{}, 0)
@@ -220,6 +221,9 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 	// Parse response from interface{}, which may be one or more items
 	ch := res.Response.Directory.(apiMusicDirectoryContainer).Child
 	switch ch.(type) {
+	// No items
+	case nil:
+		break
 	// Single item
 	case map[string]interface{}:
 		iface = append(iface, ch.(interface{}))
@@ -293,75 +297,156 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				// Add directory to collection
 				directories = append(directories, d)
 			} else {
-				// For the time being, we will not support video media, so skip it
-				if b, ok := m["isVideo"].(bool); b && ok {
-					continue
+				// If not a directory, this is a media item
+				// Parse shared media field items
+				var id int64
+				if i, ok := m["id"].(float64); ok {
+					id = int64(i)
 				}
 
-				// If not, it's media
-				med := Media{
-					// Note: ID is always an int64, so we can safely convert the float64
-					ID:          int64(m["id"].(float64)),
-					Album:       album,
-					ContentType: m["contentType"].(string),
-					CoverArt:    coverArt,
-					Created:     created,
-					CreatedRaw:  m["created"].(string),
-					DurationRaw: int64(m["duration"].(float64)),
-					IsVideo:     m["isVideo"].(bool),
-					Parent:      int64(m["parent"].(float64)),
-					Path:        m["path"].(string),
-					Suffix:      m["suffix"].(string),
-					Title:       title,
-					Type:        m["type"].(string),
+				var bitRate int64
+				if b, ok := m["bitRate"].(float64); ok {
+					bitRate = int64(b)
 				}
 
-				// Subsonic is very inconsistent, so we have to check for optional items
-				if a, ok := m["albumId"].(float64); ok {
-					med.AlbumID = int64(a)
-				}
-				if a, ok := m["artist"].(string); ok {
-					med.Artist = a
-				}
-				if a, ok := m["artistId"].(float64); ok {
-					med.ArtistID = int64(a)
-				}
-				if d, ok := m["discNumber"].(float64); ok {
-					med.DiscNumber = int64(d)
-				}
-				if g, ok := m["genre"].(string); ok {
-					med.Genre = g
-				}
-				if t, ok := m["track"].(float64); ok {
-					med.Track = int64(t)
-				}
-				if y, ok := m["year"].(float64); ok {
-					med.Year = int64(y)
+				var contentType string
+				if c, ok := m["contentType"].(string); ok {
+					contentType = c
 				}
 
-				// Returned only in transcodes
-				if t, ok := m["transcodedContentType"].(string); ok {
-					med.TranscodedContentType = t
+				var createdRaw string
+				if c, ok := m["created"].(string); ok {
+					createdRaw = c
 				}
-				if t, ok := m["transcodedSuffix"].(string); ok {
-					med.TranscodedSuffix = t
+
+				var durationRaw int64
+				if d, ok := m["duration"].(float64); ok {
+					durationRaw = int64(d)
 				}
 
 				// Parse DurationRaw into a time.Duration struct
-				d, err := time.ParseDuration(strconv.FormatInt(med.DurationRaw, 10) + "s")
+				duration, err := time.ParseDuration(strconv.FormatInt(durationRaw, 10) + "s")
 				if err != nil {
 					return nil, err
 				}
-				med.Duration = d
 
-				// Add media to collection
-				media = append(media, med)
+				var parent int64
+				if p, ok := m["parent"].(float64); ok {
+					parent = int64(p)
+				}
+
+				var path string
+				if p, ok := m["path"].(string); ok {
+					path = p
+				}
+
+				var size int64
+				if s, ok := m["size"].(float64); ok {
+					size = int64(s)
+				}
+
+				var suffix string
+				if s, ok := m["suffix"].(string); ok {
+					suffix = s
+				}
+
+				var mType string
+				if t, ok := m["type"].(string); ok {
+					mType = t
+				}
+
+				// Returned only in transcodes
+				var transcodedContentType string
+				if t, ok := m["transcodedContentType"].(string); ok {
+					transcodedContentType = t
+				}
+
+				var transcodedSuffix string
+				if t, ok := m["transcodedSuffix"].(string); ok {
+					transcodedSuffix = t
+				}
+
+				// Check if this item is a video
+				if b, ok := m["isVideo"].(bool); b && ok {
+					med := Video{
+						ID:          id,
+						BitRate:     bitRate,
+						ContentType: contentType,
+						CoverArt:    coverArt,
+						Created:     created,
+						CreatedRaw:  createdRaw,
+						Duration:    duration,
+						DurationRaw: durationRaw,
+						Parent:      parent,
+						Path:        path,
+						Size:        size,
+						Suffix:      suffix,
+						Title:       title,
+						TranscodedContentType: transcodedContentType,
+						TranscodedSuffix:      transcodedSuffix,
+					}
+
+					// Add video to collection
+					video = append(video, med)
+				} else {
+					// Else, this is an audio item
+					med := Audio{
+						// Note: ID is always an int64, so we can safely convert the float64
+						ID:          id,
+						Album:       album,
+						BitRate:     bitRate,
+						ContentType: contentType,
+						CoverArt:    coverArt,
+						Created:     created,
+						CreatedRaw:  createdRaw,
+						Duration:    duration,
+						DurationRaw: durationRaw,
+						Parent:      parent,
+						Path:        path,
+						Size:        size,
+						Suffix:      suffix,
+						Title:       title,
+						Type:        mType,
+						TranscodedContentType: transcodedContentType,
+						TranscodedSuffix:      transcodedSuffix,
+					}
+
+					// Subsonic is very inconsistent, so we have to check for optional items
+					if a, ok := m["albumId"].(float64); ok {
+						med.AlbumID = int64(a)
+					}
+					if a, ok := m["artist"].(string); ok {
+						med.Artist = a
+					}
+					if a, ok := m["artistId"].(float64); ok {
+						med.ArtistID = int64(a)
+					}
+					if d, ok := m["discNumber"].(float64); ok {
+						med.DiscNumber = int64(d)
+					}
+					if g, ok := m["genre"].(string); ok {
+						med.Genre = g
+					}
+					if t, ok := m["track"].(float64); ok {
+						med.Track = int64(t)
+					}
+					if y, ok := m["year"].(float64); ok {
+						med.Year = int64(y)
+					}
+
+					// Add audio to collection
+					audio = append(audio, med)
+				}
 			}
 		}
 	}
 
 	// Return output content
-	return &Content{Media: media, Directories: directories}, nil
+	return &Content{
+		Audio:       audio,
+		Directories: directories,
+		Video:       video,
+	}, nil
 }
 
 // -- Album/song lists --
