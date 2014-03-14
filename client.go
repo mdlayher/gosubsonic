@@ -241,6 +241,9 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 			// Therefore, we have to check for a float64 as well
 			var artist string
 			switch m["artist"].(type) {
+			// No artist
+			case nil:
+				break
 			case string:
 				artist = html.UnescapeString(m["artist"].(string))
 			case float64:
