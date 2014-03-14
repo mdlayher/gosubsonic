@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -241,15 +242,29 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 		if m, ok := i.(map[string]interface{}); ok {
 			// First, we have to work out some shared fields between directories and media
 
-			// Subsonic problem: albums with numeric titles return as integers
+			// Subsonic problem: artist/album/title with numeric titles return as integers
 			// Therefore, we have to check for a float64 as well
+			var artist string
+			switch m["artist"].(type) {
+			// No artist
+			case nil:
+				break
+			case string:
+				artist = html.UnescapeString(m["artist"].(string))
+			case float64:
+				artist = strconv.FormatInt(int64(m["artist"].(float64)), 10)
+			default:
+				return nil, errors.New("gosubsonic: unknown Artist data type for getMusicDirectory")
+			}
+
+			// Same with album
 			var album string
 			switch m["album"].(type) {
 			// No album title
 			case nil:
 				break
 			case string:
-				album = m["album"].(string)
+				album = html.UnescapeString(m["album"].(string))
 			case float64:
 				album = strconv.FormatInt(int64(m["album"].(float64)), 10)
 			default:
@@ -260,7 +275,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 			var title string
 			switch m["title"].(type) {
 			case string:
-				title = m["title"].(string)
+				title = html.UnescapeString(m["title"].(string))
 			case float64:
 				title = strconv.FormatInt(int64(m["title"].(float64)), 10)
 			default:
@@ -286,7 +301,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					// Note: ID is always an int64, so we can safely convert the float64
 					ID:         int64(m["id"].(float64)),
 					Album:      album,
-					Artist:     m["artist"].(string),
+					Artist:     artist,
 					CoverArt:   coverArt,
 					Created:    created,
 					CreatedRaw: m["created"].(string),
@@ -337,7 +352,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 
 				var path string
 				if p, ok := m["path"].(string); ok {
-					path = p
+					path = html.UnescapeString(p)
 				}
 
 				var size int64
@@ -394,6 +409,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 						// Note: ID is always an int64, so we can safely convert the float64
 						ID:          id,
 						Album:       album,
+						Artist:      artist,
 						BitRate:     bitRate,
 						ContentType: contentType,
 						CoverArt:    coverArt,
@@ -414,9 +430,6 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 					// Subsonic is very inconsistent, so we have to check for optional items
 					if a, ok := m["albumId"].(float64); ok {
 						med.AlbumID = int64(a)
-					}
-					if a, ok := m["artist"].(string); ok {
-						med.Artist = a
 					}
 					if a, ok := m["artistId"].(float64); ok {
 						med.ArtistID = int64(a)
