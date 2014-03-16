@@ -623,6 +623,17 @@ func (s Client) Download(id int64) (io.ReadCloser, error) {
 	return fetchBinary(s.makeURL("download") + "&id=" + strconv.FormatInt(id, 10))
 }
 
+// GetCoverArt returns a io.ReadCloser which contains a cover art stream, scaled to the specified size
+func (s Client) GetCoverArt(id int64, size int64) (io.ReadCloser, error) {
+	// Check for a non-negative size for image scaling
+	optStr := ""
+	if size > 0 {
+		optStr = optStr + "&size=" + strconv.FormatInt(size, 10)
+	}
+
+	return fetchBinary(s.makeURL("getCoverArt") + "&id=" + strconv.FormatInt(id, 10) + optStr)
+}
+
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method
