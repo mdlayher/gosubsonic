@@ -24,6 +24,15 @@ var mockTable = []struct {
 		},
 		"version": "1.9.0"
 	}}`)},
+	{"getMusicFolders", []byte(`{"subsonic-response": {
+		"status": "ok",
+		"xmlns": "http://subsonic.org/restapi",
+		"musicFolders": {"musicFolder": {
+			"id": 0,
+			"name": "Music"
+		}},
+		"version": "1.9.0"
+	}}`)},
 }
 
 // mockInit generates the mock data map, so we can test gosubsonic against known, static data

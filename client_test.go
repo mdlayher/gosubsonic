@@ -58,3 +58,30 @@ func TestGetLicense(t *testing.T) {
 		t.Fatalf("GetLicense returned zero date")
 	}
 }
+
+// TestGetMusicFolders verifes that client.GetMusicFolders() is working properly
+func TestGetMusicFolders(t *testing.T) {
+	log.Println("TestGetMusicFolders()")
+
+	// Generate mock client
+	s, err := New("__MOCK__", "", "")
+	if err != nil {
+		t.Fatalf("Could not generate mock client: %s", err.Error())
+	}
+
+	// Get music folders mock data
+	folders, err := s.GetMusicFolders()
+	if err != nil {
+		t.Fatalf("GetMusicFolders returned error: %s", err.Error())
+	}
+
+	// Check for known ID
+	if folders[0].ID != 0 {
+		t.Fatalf("GetMusicFolders returned invalid ID: %d", folders[0].ID)
+	}
+
+	// Check for known name
+	if folders[0].Name != "Music" {
+		t.Fatalf("GetMusicFolders returned invalid name: %s", folders[0].Name)
+	}
+}
