@@ -35,6 +35,13 @@ func New(host string, username string, password string) (*Client, error) {
 		Password: password,
 	}
 
+	// Initialize mock data if needed
+	if host == "__MOCK__" {
+		if err := mockInit(client); err != nil {
+			return nil, errors.New("gosubsonic: failed to initialize mock data")
+		}
+	}
+
 	// Attempt to ping the Subsonic server
 	_, err := client.Ping()
 	return &client, err
@@ -655,20 +662,41 @@ func fetchBinary(url string) (io.ReadCloser, error) {
 
 // fetchJSON retrives JSON from a specified URL and parses it into an apiContainer
 func fetchJSON(url string) (*apiContainer, error) {
-	// Make an API request
-	res, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
+	// Check for mock host, used in testing
+	body := make([]byte, 0)
+	if strings.Contains(url, "__MOCK__") {
+		// Get mock data from map
+		out, ok := mockData[url]
+		if !ok {
+			return nil, fmt.Errorf("gosubsonic: No mock data: %s", url)
+		}
+
+		body = out
+	} else {
+		// Else, make a HTTP API request
+		res, err := http.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
+		}
+
+		// Read the entire response body, and defer it to be closed
+		out, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		body = out
+		defer res.Body.Close()
 	}
 
-	// Read the entire response body, and defer it to be closed
-	body, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
+	/*
+	fmt.Println(url)
+	fmt.Println(string(body))
+	*/
 
 	// Unmarshal response JSON from API container
 	var subRes apiContainer
-	err = json.Unmarshal(body, &subRes)
-	if err != nil {
+	if err := json.Unmarshal(body, &subRes); err != nil {
 		return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
 	}
 
