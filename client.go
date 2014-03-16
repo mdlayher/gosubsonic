@@ -214,13 +214,8 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 	// Slice of interfaces to parse out response
 	iface := make([]interface{}, 0)
 
-	// Check if missing "child" element, meaning the directory is empty
-	if _, ok := res.Response.Directory.(apiMusicDirectoryContainer); !ok {
-		return &Content{}, nil
-	}
-
 	// Parse response from interface{}, which may be one or more items
-	ch := res.Response.Directory.(apiMusicDirectoryContainer).Child
+	ch := res.Response.Directory.Child
 	switch ch.(type) {
 	// No items
 	case nil:
