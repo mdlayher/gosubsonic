@@ -6,7 +6,7 @@ var mockData map[string][]byte
 // mockTable maps a method to mock JSON data for testing
 var mockTable = []struct {
 	method string
-	data []byte
+	data   []byte
 }{
 	{"ping", []byte(`{"subsonic-response":{
 		"status": "ok",

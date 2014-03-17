@@ -700,11 +700,6 @@ func fetchJSON(url string) (*apiContainer, error) {
 		defer res.Body.Close()
 	}
 
-	/*
-	fmt.Println(url)
-	fmt.Println(string(body))
-	*/
-
 	// Unmarshal response JSON from API container
 	var subRes apiContainer
 	if err := json.Unmarshal(body, &subRes); err != nil {
