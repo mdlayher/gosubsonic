@@ -654,6 +654,30 @@ func (s Client) GetCoverArt(id int64, size int64) (io.ReadCloser, error) {
 	return fetchBinary(s.makeURL("getCoverArt") + "&id=" + strconv.FormatInt(id, 10) + optStr)
 }
 
+// -- Media annotation --
+
+// Scrobble triggers a "Now Playing" or "Submission" request to Last.fm, if configured
+func (s Client) Scrobble(id int64, time int64, submission bool) error {
+	// Build query string
+	optStr := ""
+
+	// time (time < 0 means no time)
+	if time > 0 {
+		optStr = optStr + "&time=" + strconv.FormatInt(time, 10)
+	}
+
+	// submission (true: Submission, false: NowPlaying)
+	if submission {
+		optStr = optStr + "&submission=true"
+	} else {
+		optStr = optStr + "&submission=false"
+	}
+
+	// Send a scrobble request to Subsonic
+	_, err := s.source.Get(s.makeURL("scrobble") + "&id=" + strconv.FormatInt(id, 10) + optStr)
+	return err
+}
+
 // -- Functions --
 
 // makeURL Generates a URL for an API call using given parameters and method

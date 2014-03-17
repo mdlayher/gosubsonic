@@ -144,3 +144,19 @@ func TestGetMusicDirectory(t *testing.T) {
 		t.Fatalf("GetMusicDirectory returned invalid artist: %s", content.Directories[0].Artist)
 	}
 }
+
+// TestScrobble verifies that client.Scrobble() is working properly
+func TestScrobble(t *testing.T) {
+	log.Println("TestScrobble()")
+
+	// Generate mock client
+	s, err := NewMock()
+	if err != nil {
+		t.Fatalf("Could not generate mock client: %s", err.Error())
+	}
+
+	// Get scrobble mock data
+	if err := s.Scrobble(1, -1, false); err != nil {
+		t.Fatalf("Scrobble returned error: %s", err.Error())
+	}
+}
