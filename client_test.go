@@ -32,7 +32,7 @@ func TestPing(t *testing.T) {
 	}
 }
 
-// TestGetLicense verifes that client.GetLicense() is working properly
+// TestGetLicense verifies that client.GetLicense() is working properly
 func TestGetLicense(t *testing.T) {
 	log.Println("TestGetLicense()")
 
@@ -59,7 +59,7 @@ func TestGetLicense(t *testing.T) {
 	}
 }
 
-// TestGetMusicFolders verifes that client.GetMusicFolders() is working properly
+// TestGetMusicFolders verifies that client.GetMusicFolders() is working properly
 func TestGetMusicFolders(t *testing.T) {
 	log.Println("TestGetMusicFolders()")
 
@@ -86,7 +86,7 @@ func TestGetMusicFolders(t *testing.T) {
 	}
 }
 
-// TestGetIndexes verifes that client.GetIndexes() is working properly
+// TestGetIndexes verifies that client.GetIndexes() is working properly
 func TestGetIndexes(t *testing.T) {
 	log.Println("TestGetIndexes()")
 
@@ -115,5 +115,32 @@ func TestGetIndexes(t *testing.T) {
 	// Check for known name
 	if indexes[1].Artist[0].Name != "Boston" {
 		t.Fatalf("GetIndexes returned invalid name: %s", indexes[1].Artist[0].Name)
+	}
+}
+
+// TestGetMusicDirectory verifies that client.GetMusicDirectory() is working properly
+func TestGetMusicDirectory(t *testing.T) {
+	log.Println("TestGetMusicDirectory()")
+
+	// Generate mock client
+	s, err := New("__MOCK__", "", "")
+	if err != nil {
+		t.Fatalf("Could not generate mock client: %s", err.Error())
+	}
+
+	// Get music directory mock data
+	content, err := s.GetMusicDirectory(1)
+	if err != nil {
+		t.Fatalf("GetMusicDirectory returned error: %s", err.Error())
+	}
+
+	// Check for mock directory ID
+	if content.Directories[0].ID != 405 {
+		t.Fatalf("GetMusicDirectory returned invalid ID: %d", content.Directories[0].ID)
+	}
+
+	// Check for mock artist
+	if content.Directories[0].Artist != "Adventure" {
+		t.Fatalf("GetMusicDirectory returned invalid artist: %s", content.Directories[0].Artist)
 	}
 }

@@ -55,6 +55,25 @@ var mockTable = []struct {
 		"xmlns": "http://subsonic.org/restapi",
 		"version": "1.9.0"
 	}}`)},
+	{"getMusicDirectory", []byte(`{"subsonic-response": {
+		"status": "ok",
+		"directory": {
+			"child": {
+				"id": 405,
+				"title": "2008 - Adventure",
+				"created": "2013-08-12T00:12:24",
+				"album": "Adventure",
+				"parent": 1,
+				"isDir": true,
+				"artist": "Adventure",
+				"coverArt": 405
+			},
+		"id": 3,
+		"name": "Adventure"
+		},
+		"xmlns": "http://subsonic.org/restapi",
+		"version": "1.9.0"
+	}}`)},
 }
 
 // mockInit generates the mock data map, so we can test gosubsonic against known, static data
@@ -64,7 +83,15 @@ func mockInit(s Client) error {
 
 	// Populate map using this client's URLs
 	for _, entry := range mockTable {
-		mockData[s.makeURL(entry.method)] = entry.data
+		// Extra options
+		optStr := ""
+
+		// getMusicDirectory - add mock ID
+		if entry.method == "getMusicDirectory" {
+			optStr = optStr + "&id=1"
+		}
+
+		mockData[s.makeURL(entry.method) + optStr] = entry.data
 	}
 
 	return nil
