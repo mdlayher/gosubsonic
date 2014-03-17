@@ -1,4 +1,4 @@
-gosubsonic
+gosubsonic [![Build Status](https://travis-ci.org/mdlayher/gosubsonic.png?branch=master)](https://travis-ci.org/mdlayher/gosubsonic)
 ==========
 
 Subsonic client library, written in Go.  MIT Licensed.
