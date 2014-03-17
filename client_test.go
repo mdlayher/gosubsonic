@@ -10,7 +10,7 @@ func TestPing(t *testing.T) {
 	log.Println("TestPing()")
 
 	// Generate mock client
-	s, err := New("__MOCK__", "", "")
+	s, err := NewMock()
 	if err != nil {
 		t.Fatalf("Could not generate mock client: %s", err.Error())
 	}
@@ -37,7 +37,7 @@ func TestGetLicense(t *testing.T) {
 	log.Println("TestGetLicense()")
 
 	// Generate mock client
-	s, err := New("__MOCK__", "", "")
+	s, err := NewMock()
 	if err != nil {
 		t.Fatalf("Could not generate mock client: %s", err.Error())
 	}
@@ -64,7 +64,7 @@ func TestGetMusicFolders(t *testing.T) {
 	log.Println("TestGetMusicFolders()")
 
 	// Generate mock client
-	s, err := New("__MOCK__", "", "")
+	s, err := NewMock()
 	if err != nil {
 		t.Fatalf("Could not generate mock client: %s", err.Error())
 	}
@@ -91,7 +91,7 @@ func TestGetIndexes(t *testing.T) {
 	log.Println("TestGetIndexes()")
 
 	// Generate mock client
-	s, err := New("__MOCK__", "", "")
+	s, err := NewMock()
 	if err != nil {
 		t.Fatalf("Could not generate mock client: %s", err.Error())
 	}
@@ -123,7 +123,7 @@ func TestGetMusicDirectory(t *testing.T) {
 	log.Println("TestGetMusicDirectory()")
 
 	// Generate mock client
-	s, err := New("__MOCK__", "", "")
+	s, err := NewMock()
 	if err != nil {
 		t.Fatalf("Could not generate mock client: %s", err.Error())
 	}

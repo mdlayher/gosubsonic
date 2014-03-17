@@ -19,11 +19,17 @@ const (
 	APIVERSION = "1.8.0"
 )
 
+// dataSource represents a data source for a Subsonic client (could be HTTP, mock, etc)
+type dataSource interface {
+	Get(string) (*apiContainer, error)
+}
+
 // Client represents the required parameters to connect to a Subsonic server
 type Client struct {
 	Host     string
 	Username string
 	Password string
+	source   dataSource
 }
 
 // New creates a new Client using the specified parameters
@@ -33,13 +39,9 @@ func New(host string, username string, password string) (*Client, error) {
 		Host:     host,
 		Username: username,
 		Password: password,
-	}
 
-	// Initialize mock data if needed
-	if host == "__MOCK__" {
-		if err := mockInit(client); err != nil {
-			return nil, errors.New("gosubsonic: failed to initialize mock data")
-		}
+		// Use HTTP as the data source
+		source: httpDataSource{},
 	}
 
 	// Attempt to ping the Subsonic server
@@ -47,12 +49,30 @@ func New(host string, username string, password string) (*Client, error) {
 	return &client, err
 }
 
+// NewMock creates a new Client which receives mock data instead of connecting to a Subsonic server
+func NewMock() (*Client, error) {
+	// Generate a new mock client
+	client := Client{
+		Host: "__MOCK__",
+
+		// Use mock data as the data source
+		source: mockDataSource{},
+	}
+
+	// Initialize mock data
+	if err := mockInit(client); err != nil {
+		return nil, errors.New("gosubsonic: failed to initialize mock client")
+	}
+
+	return &client, nil
+}
+
 // -- System --
 
 // Ping checks the connectivity of a Subsonic server
 func (s Client) Ping() (*APIStatus, error) {
 	// Nil error means that ping is successful
-	res, err := fetchJSON(s.makeURL("ping"))
+	res, err := s.source.Get(s.makeURL("ping"))
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +83,7 @@ func (s Client) Ping() (*APIStatus, error) {
 // GetLicense retrieves details about the Subsonic server license
 func (s Client) GetLicense() (*License, error) {
 	// Retrieve license information from Subsonic
-	res, err := fetchJSON(s.makeURL("getLicense"))
+	res, err := s.source.Get(s.makeURL("getLicense"))
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +109,7 @@ func (s Client) GetLicense() (*License, error) {
 // GetMusicFolders returns the configured top-level music folders
 func (s Client) GetMusicFolders() ([]MusicFolder, error) {
 	// Retrieve top-level music folders from Subsonic
-	res, err := fetchJSON(s.makeURL("getMusicFolders"))
+	res, err := s.source.Get(s.makeURL("getMusicFolders"))
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +170,7 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 	}
 
 	// Retrieve indexes from Subsonic, with query parameters
-	res, err := fetchJSON(s.makeURL("getIndexes") + query)
+	res, err := s.source.Get(s.makeURL("getIndexes") + query)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +228,7 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 // GetMusicDirectory returns a list of all content in a music directory
 func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 	// Retrieve a list of files in a given directory from Subsonic
-	res, err := fetchJSON(s.makeURL("getMusicDirectory") + "&id=" + strconv.FormatInt(folderID, 10))
+	res, err := s.source.Get(s.makeURL("getMusicDirectory") + "&id=" + strconv.FormatInt(folderID, 10))
 	if err != nil {
 		return nil, err
 	}
@@ -469,7 +489,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 // GetNowPlaying returns a list of tracks which are currently being played
 func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 	// Retreive all tracks currently playing from Subsonic
-	res, err := fetchJSON(s.makeURL("getNowPlaying"))
+	res, err := s.source.Get(s.makeURL("getNowPlaying"))
 	if err != nil {
 		return nil, err
 	}
@@ -671,39 +691,54 @@ func fetchBinary(url string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-// fetchJSON retrives JSON from a specified URL and parses it into an apiContainer
-func fetchJSON(url string) (*apiContainer, error) {
-	// Check for mock host, used in testing
-	body := make([]byte, 0)
-	if strings.Contains(url, "__MOCK__") {
-		// Get mock data from map
-		out, ok := mockData[url]
-		if !ok {
-			return nil, fmt.Errorf("gosubsonic: No mock data: %s", url)
-		}
+// httpDataSource represents a HTTP data source for a Subsonic client
+type httpDataSource struct {
+}
 
-		body = out
-	} else {
-		// Else, make a HTTP API request
-		res, err := http.Get(url)
-		if err != nil {
-			return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
-		}
-
-		// Read the entire response body, and defer it to be closed
-		out, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		body = out
-		defer res.Body.Close()
+// Get retrieves JSON from HTTP with a specified URL, and parses it into an apiContainer
+func (s httpDataSource) Get(url string) (*apiContainer, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("gosubsonic: HTTP request failed: %s - %s", err.Error(), url)
 	}
 
+	// Read the entire response body
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close response body
+	if err := res.Body.Close(); err != nil {
+		return nil, err
+	}
+
+	// Return apiContainer
+	return processJSON(out)
+}
+
+// mockDataSource represents a mock data source for a Subsonic client
+type mockDataSource struct {
+}
+
+// Get retrieves JSON from mock data with a specified URL, and parses it into an apiContainer
+func (s mockDataSource) Get(url string) (*apiContainer, error) {
+	// Get mock data from map
+	res, ok := mockData[url]
+	if !ok {
+		return nil, fmt.Errorf("gosubsonic: No mock data: %s", url)
+	}
+
+	// Return apiContainer
+	return processJSON(res)
+}
+
+// processJSON parses raw JSON into an apiContainer
+func processJSON(body []byte) (*apiContainer, error) {
 	// Unmarshal response JSON from API container
 	var subRes apiContainer
 	if err := json.Unmarshal(body, &subRes); err != nil {
-		return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s - %s", err.Error(), url)
+		return nil, fmt.Errorf("gosubsonic: failed to parse response JSON: %s", err.Error())
 	}
 
 	// Check for any errors in response object
