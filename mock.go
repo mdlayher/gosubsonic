@@ -91,7 +91,7 @@ func mockInit(s Client) error {
 			optStr = optStr + "&id=1"
 		}
 
-		mockData[s.makeURL(entry.method) + optStr] = entry.data
+		mockData[s.makeURL(entry.method)+optStr] = entry.data
 	}
 
 	return nil
