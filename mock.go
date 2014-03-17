@@ -33,6 +33,28 @@ var mockTable = []struct {
 		}},
 		"version": "1.9.0"
 	}}`)},
+	{"getIndexes", []byte(`{"subsonic-response": {
+		"status": "ok",
+		"indexes": {
+			"index": [{
+				"name": "A",
+				"artist": {
+					"id": 1,
+					"name": "Adventure"
+				}
+			},
+			{
+				"name": "B",
+				"artist": {
+					"id": 2,
+					"name": "Boston"
+				}
+			}],
+			"lastModified": 1395014311154
+		},
+		"xmlns": "http://subsonic.org/restapi",
+		"version": "1.9.0"
+	}}`)},
 }
 
 // mockInit generates the mock data map, so we can test gosubsonic against known, static data

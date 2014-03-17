@@ -85,3 +85,35 @@ func TestGetMusicFolders(t *testing.T) {
 		t.Fatalf("GetMusicFolders returned invalid name: %s", folders[0].Name)
 	}
 }
+
+// TestGetIndexes verifes that client.GetIndexes() is working properly
+func TestGetIndexes(t *testing.T) {
+	log.Println("TestGetIndexes()")
+
+	// Generate mock client
+	s, err := New("__MOCK__", "", "")
+	if err != nil {
+		t.Fatalf("Could not generate mock client: %s", err.Error())
+	}
+
+	// Get indexes mock data
+	indexes, err := s.GetIndexes(-1, -1)
+	if err != nil {
+		t.Fatalf("GetIndexes returned error: %s", err.Error())
+	}
+
+	// Check for proper index
+	if indexes[0].Name != "A" {
+		t.Fatalf("GetIndexes returned invalid index name: %s", indexes[0].Name)
+	}
+
+	// Check for known ID
+	if indexes[0].Artist[0].ID != 1 {
+		t.Fatalf("GetIndexes returned invalid ID: %d", indexes[0].Artist[0].ID)
+	}
+
+	// Check for known name
+	if indexes[1].Artist[0].Name != "Boston" {
+		t.Fatalf("GetIndexes returned invalid name: %s", indexes[1].Artist[0].Name)
+	}
+}
