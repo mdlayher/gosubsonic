@@ -203,11 +203,26 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 		for _, i := range iface {
 			// Type hint to appropriate type
 			if m, ok := i.(map[string]interface{}); ok {
+
+				// Artist could be a string or a float64, so check for both
+				var artist string
+				switch m["artist"].(type) {
+				// No artist
+				case nil:
+					break
+				case string:
+					artist = html.UnescapeString(m["artist"].(string))
+				case float64:
+					artist = strconv.FormatInt(int64(m["artist"].(float64)), 10)
+				default:
+					return nil, errors.New("gosubsonic: unknown Artist data type for getIndexes")
+				}
+
 				// Create a IndexArtist from map
 				a := IndexArtist{
 					// Note: ID is always an int64, so we can safely convert the float64
 					ID:   int64(m["id"].(float64)),
-					Name: m["name"].(string),
+					Name: artist,
 				}
 
 				// Add artist to collection
