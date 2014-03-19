@@ -203,16 +203,10 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 		for _, i := range iface {
 			// Type hint to appropriate type
 			if m, ok := i.(map[string]interface{}); ok {
-
-				// Name could be a string or a float64, so check for both
-				var name string
-				switch m["name"].(type) {
-				case string:
-					name = html.UnescapeString(m["name"].(string))
-				case float64:
-					name = strconv.FormatInt(int64(m["name"].(float64)), 10)
-				default:
-					return nil, errors.New("gosubsonic: unknown Name data type for getIndexes")
+				// Name
+				name, err := ifaceToString(m["name"])
+				if err != nil {
+					return nil, err
 				}
 
 				// Create a IndexArtist from map
@@ -276,44 +270,22 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 		if m, ok := i.(map[string]interface{}); ok {
 			// First, we have to work out some shared fields between directories and media
 
-			// Subsonic problem: artist/album/title with numeric titles return as integers
-			// Therefore, we have to check for a float64 as well
-			var artist string
-			switch m["artist"].(type) {
-			// No artist
-			case nil:
-				break
-			case string:
-				artist = html.UnescapeString(m["artist"].(string))
-			case float64:
-				artist = strconv.FormatInt(int64(m["artist"].(float64)), 10)
-			default:
-				return nil, errors.New("gosubsonic: unknown Artist data type for getMusicDirectory")
+			// Artist
+			artist, err := ifaceToString(m["artist"])
+			if err != nil {
+				return nil, err
 			}
 
-			// Same with album
-			var album string
-			switch m["album"].(type) {
-			// No album title
-			case nil:
-				break
-			case string:
-				album = html.UnescapeString(m["album"].(string))
-			case float64:
-				album = strconv.FormatInt(int64(m["album"].(float64)), 10)
-			default:
-				return nil, errors.New("gosubsonic: unknown Album data type for getMusicDirectory")
+			// Album
+			album, err := ifaceToString(m["album"])
+			if err != nil {
+				return nil, err
 			}
 
-			// Same thing with song title
-			var title string
-			switch m["title"].(type) {
-			case string:
-				title = html.UnescapeString(m["title"].(string))
-			case float64:
-				title = strconv.FormatInt(int64(m["title"].(float64)), 10)
-			default:
-				return nil, errors.New("gosubsonic: unknown Title data type for getMusicDirectory")
+			// Title
+			title, err := ifaceToString(m["title"])
+			if err != nil {
+				return nil, err
 			}
 
 			// Some albums may not have cover art, so we check individually for it
@@ -536,12 +508,31 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 	for _, i := range iface {
 		// Type hint to appropriate type
 		if m, ok := i.(map[string]interface{}); ok {
+			// Artist
+			artist, err := ifaceToString(m["artist"])
+			if err != nil {
+				return nil, err
+			}
+
+			// Album
+			album, err := ifaceToString(m["album"])
+			if err != nil {
+				return nil, err
+			}
+
+			// Title
+			title, err := ifaceToString(m["title"])
+			if err != nil {
+				return nil, err
+			}
+
 			// Create a now playing entry from the map
 			n := NowPlaying{
 				ID:          int64(m["id"].(float64)),
 				AlbumID:     int64(m["albumId"].(float64)),
-				Artist:      m["artist"].(string),
+				Album:       album,
 				ArtistID:    int64(m["artistId"].(float64)),
+				Artist:      artist,
 				BitRate:     int64(m["bitRate"].(float64)),
 				ContentType: m["contentType"].(string),
 				CreatedRaw:  m["created"].(string),
@@ -556,20 +547,9 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 				PlayerID:    int64(m["playerId"].(float64)),
 				Size:        int64(m["size"].(float64)),
 				Suffix:      m["suffix"].(string),
-				Title:       m["title"].(string),
+				Title:       title,
 				Track:       int64(m["track"].(float64)),
 				Year:        int64(m["year"].(float64)),
-			}
-
-			// Subsonic problem: albums with numeric titles return as integers
-			// Therefore, we have to check for a float64 as well
-			switch m["album"].(type) {
-			case string:
-				n.Album = m["album"].(string)
-			case float64:
-				n.Album = strconv.FormatInt(int64(m["album"].(float64)), 10)
-			default:
-				return nil, errors.New("gosubsonic: unknown Album data type for getNowPlaying")
 			}
 
 			// Some albums may not have cover art, so we check individually for it
@@ -785,4 +765,32 @@ func processJSON(body []byte) (*apiContainer, error) {
 
 	// Return the response container
 	return &subRes, nil
+}
+
+// ifaceToString attempts to convert an interface type to its string representation
+func ifaceToString(data interface{}) (string, error) {
+	// There are many cases in Subsonic's XML-to-JSON converter fails to properly
+	// handle certain conversions properly.  To account for this, this function will
+	// turn types into their string representation.
+
+	// Some issues found so far:
+	//   - Numeric artist/title (311, etc) will return as a float64
+	//   - Boolean artist/title (True, false), etc will return as a boolean
+	//   - String artist/title, etc must have HTML unescaped
+	switch data.(type) {
+	case nil:
+		return "", nil
+	case bool:
+		if data.(bool) {
+			return "True", nil
+		}
+
+		return "False", nil
+	case string:
+		return html.UnescapeString(data.(string)), nil
+	case float64:
+		return strconv.FormatInt(int64(data.(float64)), 10), nil
+	default:
+		return "", fmt.Errorf("gosubsonic: unknown data type %T for ifaceToString", data)
+	}
 }
