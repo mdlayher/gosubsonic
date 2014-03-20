@@ -66,7 +66,7 @@ type MusicFolder struct {
 
 // apiIndexesContainer represents the container for a slice of Index structs
 type apiIndexesContainer struct {
-	Index []Index
+	Index interface{}
 }
 
 // Index represents a group in the Subsonic index

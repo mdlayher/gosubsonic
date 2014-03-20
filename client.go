@@ -178,47 +178,78 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 	// Generate new index with proper information
 	outIndex := make([]Index, 0)
 
-	// Iterate all raw Index structs
-	for _, index := range res.Response.Indexes.Index {
+	// Slice of interfaces to parse out response
+	iface := make([]interface{}, 0)
+
+	// Parse response from interface{}, which may be one or more items
+	idx := res.Response.Indexes.Index
+	switch idx.(type) {
+	// Single item
+	case map[string]interface{}:
+		iface = append(iface, idx.(interface{}))
+	// Multiple items
+	case []interface{}:
+		iface = idx.([]interface{})
+	// Unknown case
+	default:
+		return nil, errors.New("gosubsonic: failed to parse getIndexes response")
+	}
+
+	// Iterate each index item
+	for _, i := range iface {
+		m, ok := i.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Create an index
+		index := Index{
+			Name: m["name"].(string),
+			ArtistRaw: m["artist"],
+		}
+
 		// Slice of IndexArtist structs to output
 		artists := make([]IndexArtist, 0)
 
 		// Slice of interfaces to parse out response
-		iface := make([]interface{}, 0)
+		ifaceArtists := make([]interface{}, 0)
 
 		// Parse response from interface{}, which may be one or more items
 		switch index.ArtistRaw.(type) {
 		// Single item
 		case map[string]interface{}:
-			iface = append(iface, index.ArtistRaw.(interface{}))
+			ifaceArtists = append(ifaceArtists, index.ArtistRaw.(interface{}))
 		// Multiple items
 		case []interface{}:
-			iface = index.ArtistRaw.([]interface{})
+			ifaceArtists = index.ArtistRaw.([]interface{})
 		// Unknown case
 		default:
 			return nil, errors.New("gosubsonic: failed to parse getIndexes response")
 		}
 
 		// Iterate each item
-		for _, i := range iface {
+		for _, ia := range ifaceArtists {
 			// Type hint to appropriate type
-			if m, ok := i.(map[string]interface{}); ok {
-				// Name
-				name, err := ifaceToString(m["name"])
-				if err != nil {
-					return nil, err
-				}
-
-				// Create a IndexArtist from map
-				a := IndexArtist{
-					// Note: ID is always an int64, so we can safely convert the float64
-					ID:   int64(m["id"].(float64)),
-					Name: name,
-				}
-
-				// Add artist to collection
-				artists = append(artists, a)
+			ma, ok := ia.(map[string]interface{})
+			if !ok {
+				continue
 			}
+
+			// Name
+			name, err := ifaceToString(ma["name"])
+			if err != nil {
+				return nil, err
+			}
+
+			// Create a IndexArtist from map
+			a := IndexArtist{
+				// Note: ID is always an int64, so we can safely convert the float64
+				ID:   int64(ma["id"].(float64)),
+				Name: name,
+			}
+
+			// Add artist to collection
+			artists = append(artists, a)
 		}
 
 		// Store artists collection in out index, nullify raw values
