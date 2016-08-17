@@ -557,10 +557,31 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 				return nil, err
 			}
 
+			// MusicID
+			_musicID, err := strconv.Atoi(m["id"].(string))
+			if err != nil {
+				return nil, err
+			}
+			musicID := int64(_musicID)
+
+			// AlbumID
+			_albumID, err := strconv.Atoi(m["albumId"].(string))
+			if err != nil {
+				return nil, err
+			}
+			albumID := int64(_albumID)
+
+			// Parent
+			_parent, err := strconv.Atoi(m["parent"].(string))
+			if err != nil {
+				return nil, err
+			}
+			parent := int64(_parent)
+
 			// Create a now playing entry from the map
 			n := NowPlaying{
-				ID:          int64(m["id"].(float64)),
-				AlbumID:     int64(m["albumId"].(float64)),
+				ID:          musicID,
+				AlbumID:     albumID,
 				Album:       album,
 				ArtistID:    int64(m["artistId"].(float64)),
 				Artist:      artist,
@@ -573,7 +594,7 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 				IsDir:       m["isDir"].(bool),
 				IsVideo:     m["isVideo"].(bool),
 				MinutesAgo:  int64(m["minutesAgo"].(float64)),
-				Parent:      int64(m["parent"].(float64)),
+				Parent:      parent,
 				Path:        m["path"].(string),
 				PlayerID:    int64(m["playerId"].(float64)),
 				Size:        int64(m["size"].(float64)),
