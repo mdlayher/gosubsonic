@@ -608,7 +608,7 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 			}
 
 			// Parse CreatedRaw into a time.Time struct
-			t, err := time.Parse("2006-01-02T15:04:05", n.CreatedRaw)
+			t, err := time.Parse("2006-01-02T15:04:05Z", n.CreatedRaw)
 			if err != nil {
 				return nil, err
 			}
