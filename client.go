@@ -522,7 +522,7 @@ func (s Client) GetNowPlaying() ([]NowPlaying, error) {
 	iface := make([]interface{}, 0)
 
 	// Parse response from interface{}, which may be one or more items
-	en := res.Response.NowPlaying.(apiNowPlayingContainer).Entry
+	en := res.Response.NowPlaying.(map[string]interface{})["entry"]
 	switch en.(type) {
 	// Single item
 	case map[string]interface{}:
