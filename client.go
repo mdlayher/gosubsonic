@@ -326,7 +326,7 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 			}
 
 			// Parse CreatedRaw into a time.Time struct
-			created, err := time.Parse("2006-01-02T15:04:05", m["created"].(string))
+			created, err := time.Parse("2006-01-02T15:04:05Z", m["created"].(string))
 			if err != nil {
 				return nil, err
 			}
