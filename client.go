@@ -724,8 +724,13 @@ func (s Client) Scrobble(id int64, time int64, submission bool) error {
 
 // makeURL Generates a URL for an API call using given parameters and method
 func (s Client) makeURL(method string) string {
-	return fmt.Sprintf("http://%s/rest/%s.view?u=%s&p=%s&c=%s&v=%s&f=json",
-		s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
+	if strings.Contains(s.Host, "://") {
+		return fmt.Sprintf("%s/rest/%s.view?u=%s&p=%s&c=%s&v=%s&f=json",
+			s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
+	} else {
+		return fmt.Sprintf("http://%s/rest/%s.view?u=%s&p=%s&c=%s&v=%s&f=json",
+			s.Host, method, s.Username, s.Password, CLIENT, APIVERSION)
+	}
 }
 
 // fetchBinary retrieves a binary stream from a specified URL and returns a io.ReadCloser on the stream
