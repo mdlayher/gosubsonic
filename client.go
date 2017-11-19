@@ -242,9 +242,10 @@ func (s Client) GetIndexes(folderID int64, modified int64) ([]Index, error) {
 			}
 
 			// Create a IndexArtist from map
+			id, _ := strconv.ParseInt(ma["id"].(string), 0, 64)
 			a := IndexArtist{
 				// Note: ID is always an int64, so we can safely convert the float64
-				ID:   int64(ma["id"].(float64)),
+				ID:   id,
 				Name: name,
 			}
 
@@ -326,23 +327,25 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 			}
 
 			// Parse CreatedRaw into a time.Time struct
-			created, err := time.Parse("2006-01-02T15:04:05", m["created"].(string))
+			created, err := time.Parse("2006-01-02T15:04:05Z", m["created"].(string))
 			if err != nil {
 				return nil, err
 			}
 
 			// Is this a directory?
 			if b, ok := m["isDir"].(bool); b && ok {
+				id, _ := strconv.ParseInt(m["id"].(string), 0, 64)
+				parentId, _ := strconv.ParseInt(m["parent"].(string), 0, 64)
 				// Create a directory from the map
 				d := Directory{
 					// Note: ID is always an int64, so we can safely convert the float64
-					ID:         int64(m["id"].(float64)),
+					ID:         id,
 					Album:      album,
 					Artist:     artist,
 					CoverArt:   coverArt,
 					Created:    created,
 					CreatedRaw: m["created"].(string),
-					Parent:     int64(m["parent"].(float64)),
+					Parent:     parentId,
 					Title:      title,
 				}
 
@@ -352,8 +355,8 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				// If not a directory, this is a media item
 				// Parse shared media field items
 				var id int64
-				if i, ok := m["id"].(float64); ok {
-					id = int64(i)
+				if i, err := strconv.ParseInt(m["id"].(string), 0, 64); err==nil {
+					id = i;
 				}
 
 				var bitRate int64
@@ -383,8 +386,8 @@ func (s Client) GetMusicDirectory(folderID int64) (*Content, error) {
 				}
 
 				var parent int64
-				if p, ok := m["parent"].(float64); ok {
-					parent = int64(p)
+				if p, err := strconv.ParseInt(m["parent"].(string), 0, 64); err==nil {
+					parent = p
 				}
 
 				var path string
